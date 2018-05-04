@@ -1,0 +1,8 @@
+wxPython
+requests
+PyMuPDF
+bumpversion
+wheel
+twine
+keyring
+
