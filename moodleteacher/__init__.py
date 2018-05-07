@@ -5,6 +5,7 @@ import re
 import os
 import os.path
 import pickle
+import logging
 
 import requests
 
@@ -69,7 +70,9 @@ class MoodleRequest():
         '''
             Perform a GET request to the Moodle web service.
         '''
+        logging.debug("Performing web service GET call for " + self.ws_params['wsfunction'])
         result = requests.get(self.conn.ws_url, params=self.ws_params)
+        logging.debug("Result: " + str(result))
         result.raise_for_status()
         return result
 
@@ -78,7 +81,9 @@ class MoodleRequest():
             Perform a POST request to the Moodle web service with the given parameters.
         '''
         post_data = {**self.ws_params, **post_params}
+        logging.debug("Performing web service POST call for " + self.ws_params['wsfunction'])
         result = requests.post(self.conn.ws_url, params=post_data)
+        logging.debug("Result: " + str(result))
         result.raise_for_status()
         return result
 
@@ -125,6 +130,7 @@ class MoodleAssignment():
                 conn: The MoodleConnection object.
                 raw_json: The JSON information about the assignment.
         '''
+        self.conn = conn
         self.course = course
         self.duedate = datetime.datetime.fromtimestamp(raw_json['duedate'])
         self.cutoffdate = datetime.datetime.fromtimestamp(raw_json['cutoffdate'])
@@ -141,13 +147,15 @@ class MoodleAssignment():
                config['name'] == 'enabled' and \
                config['value'] == '1':
                 self.allows_feedback_comment = True
-        self.submissions = MoodleSubmissions(conn, self)
 
     def __str__(self):
         return("{0.name} (Fällig: {0.deadline})".format(self))
 
     def deadline_over(self):
         return datetime.datetime.now() > self.deadline
+
+    def submissions(self):
+        return MoodleSubmissions(self.conn, self)
 
 class MoodleAssignments(list):
     '''
@@ -322,3 +330,4 @@ class MoodleCourse():
                     self.can_grade = True
                 else:
                     self.can_grade = False
+
