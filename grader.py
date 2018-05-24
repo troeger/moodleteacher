@@ -4,6 +4,8 @@
 # Example for a complex grading script that utilizes all features of the moodleteacher library.
 #
 
+import sys
+
 from moodleteacher import MoodleConnection, MoodleAssignments, MoodleUser, MoodleSubmissionFile
 from moodleteacher.preview import show_html_preview, show_file_preview
 
@@ -27,22 +29,26 @@ def handle_submission(submission):
             # Show details of the file, especially the content type.
             print("Submission file "+str(f))
             # Ask what to do with it.
-            inp = input("Your options:\nRun (l)ocally as shell script.\nRun (r)emotely as shell script.\nShow (p)review.\nS(k)ip this submission.\nYour choice:")
-            if inp == 'l':
-                print(f.as_text())
-                # Store file in temporary file and run it with bash locally.
-                f.run_shellscript_local()
-            if inp == 'r':
-                print(f.as_text())
-                # Store file in temporary file on remote computer (SCP) and run it with bash remotely (SSH).
-                f.run_shellscript_remote('ptroeger', 'dbl65.beuth-hochschule.de', '/tmp')
-            if inp == 'p':
-                # Show file preview, depending on content type (pdf, text, ...)
-                if not show_file_preview(user_details.fullname, f):
-                    print("Sorry, preview not possible for this file type. Skipping submission.")
+            inp=''
+            while inp != 'g':
+                inp = input("Your options: Enter (g)rading. Run (l)ocally as shell script. Run (r)emotely as shell script. Compile as (j)ava program. Show (p)review. S(k)ip this submission.\nYour choice:")
+                if inp == 'l':
+                    # Store file in temporary file and run it with bash locally.
+                    print("Running shell script locally ...")
+                    f.run_shellscript_local()
+                if inp == 'r':
+                    # Store file in temporary file on remote computer (SCP) and run it with bash remotely (SSH).
+                    print("Running shell script remotely ...")
+                    f.run_shellscript_remote('ptroeger', 'dbl65.beuth-hochschule.de', '/tmp')
+                if inp == 'j':
+                    print("Compiling with javac ...")
+                    f.compile_with('javac')
+                if inp == 'p':
+                    # Show file preview, depending on content type (pdf, text, ...)
+                    if not show_file_preview(user_details.fullname, f):
+                        print("Sorry, preview not possible for this file type.")
+                if inp == 'k':
                     return
-            if inp == 'k':
-                return
     if assignment.allows_feedback_comment:
         comment = input("Feedback for student:")
     else:
@@ -74,6 +80,10 @@ if __name__ == '__main__':
         if not assignment.deadline_over():
             print("  Skipping assignment, still open.")
             continue
-        for sub in assignment.submissions():
-            if not sub.is_empty() and sub.gradingstatus == sub.NOT_GRADED:
+        submissions = assignment.submissions()
+        gradable = [sub for sub in submissions if not sub.is_empty() and sub.gradingstatus == sub.NOT_GRADED]
+        if len(sys.argv) > 1 and sys.argv[1] == "overview":
+            print("%u gradable submissions"%len(gradable))
+        else:
+            for sub in gradable:
                 handle_submission(sub)

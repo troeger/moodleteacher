@@ -177,10 +177,9 @@ class MoodleSubmissionFile():
     # Content types we don't know how to deal with in the preview
     UNKNOWN_CONTENT = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                       'application/vnd.oasis.opendocument.text',
-                       'application/zip']
+                       'application/vnd.oasis.opendocument.text']
     # Content types that come as byte stream download, and not as text with an encoding
-    BINARY_CONTENT  = ['application/pdf', 'application/x-sh'] + UNKNOWN_CONTENT
+    BINARY_CONTENT  = ['application/pdf', 'application/x-sh', 'application/zip'] + UNKNOWN_CONTENT
     # Shell to suer for execution
     SHELL = ['/bin/bash',]
 
@@ -190,17 +189,20 @@ class MoodleSubmissionFile():
     content = None
     is_binary = None
     is_pdf = False
+    is_zip = False
 
     def __init__(self, conn, url):
         response = requests.get(url, params={'token': conn.token})
         self.encoding = response.encoding
         disp = response.headers['content-disposition']
-        self.filename = re.findall("filename=(.+)", disp)[0]
+        self.filename = re.findall('filename="(.+)"', disp)[0]
         self.content_type = response.headers.get('content-type')
         if self.content_type in self.BINARY_CONTENT:
             self.content = response.content
             if self.content_type == 'application/pdf':
                 self.is_pdf = True
+            if self.content_type == 'application/zip':
+                self.is_zip = True
         else:
             self.content = response.text
         self.is_binary = False if isinstance(self.content, str) else True
@@ -210,6 +212,14 @@ class MoodleSubmissionFile():
             disk_file.write(self.content)
             disk_file.flush()
             return subprocess.run([*self.SHELL, disk_file.name, *args], stderr=subprocess.STDOUT)
+
+    def compile_with(self, cmd):
+        with tempfile.TemporaryDirectory() as d:
+            f=open(d + os.sep + self.filename, mode="w")
+            f.write(self.content)
+            f.close()
+            compile_output = subprocess.run([*cmd.split(' '), self.filename], cwd=d, stderr=subprocess.STDOUT)
+            return 
 
     def run_shellscript_remote(self, user_name, host, target_path, args=[]):
         '''
