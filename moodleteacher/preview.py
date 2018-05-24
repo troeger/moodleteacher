@@ -2,6 +2,8 @@ import os
 import sys
 import subprocess
 import tempfile
+from zipfile import ZipFile
+from io import BytesIO
 
 import wx 
 import wx.html2 
@@ -54,7 +56,40 @@ class HTMLViewer(Viewer):
         sizer.Add(self.browser, wx.ID_ANY, wx.EXPAND | wx.ALL, 20) 
         self.SetSizer(sizer) 
         self.SetSize((700, 700)) 
-  
+
+class ZIPViewer(Viewer):
+    def __init__(self, title=None, zip_file=None, **kwargs):
+        super().__init__(**kwargs) 
+
+        font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
+        font.SetPointSize(9)
+
+        vsizer = wx.BoxSizer(wx.VERTICAL)
+
+        m_text = wx.StaticText(self, -1, title)
+        vsizer.Add(m_text)
+
+        info_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        files = wx.ListBox(self)
+        info_sizer.Add(files, 1, flag=wx.EXPAND|wx.LEFT)
+        self.content_box = wx.TextCtrl(self)        
+        info_sizer.Add(self.content_box, 3, flag=wx.EXPAND|wx.RIGHT)
+
+        vsizer.Add(info_sizer, 1, flag=wx.EXPAND|wx.TOP|wx.ALL, border=8)
+
+        self.SetSizer(vsizer)
+
+        input_zip=ZipFile(BytesIO(zip_file))
+        for index, fname in enumerate(input_zip.namelist()):
+            data = input_zip.read(fname)
+            if index == 0:
+                self.content_box.SetValue(data)
+            files.Append(fname, clientData=data)
+        files.Bind(wx.EVT_LISTBOX, self.on_event_files_select)
+        files.SetSelection(0)
+
+    def on_event_files_select(self, event):
+        self.content_box.SetValue(event.ClientData)
 
 def show_html_preview(title, text):
     '''
@@ -64,6 +99,15 @@ def show_html_preview(title, text):
     '''
     app = wx.App() 
     dialog = HTMLViewer(title, text) 
+    dialog.Show() 
+    app.MainLoop() 
+
+def show_zip_preview(title, zip_file):
+    '''
+        Show ZIP preview.
+    '''
+    app = wx.App() 
+    dialog = ZIPViewer(title, zip_file) 
     dialog.Show() 
     app.MainLoop() 
 
@@ -87,8 +131,13 @@ def show_pdf_preview(title, byte_data):
 def show_file_preview(title, moodle_submission_file):
     if moodle_submission_file.content_type in moodle_submission_file.UNKNOWN_CONTENT:
         return False
-    if moodle_submission_file.is_pdf:
-        show_pdf_preview(title, moodle_submission_file.content)
+    elif moodle_submission_file.is_pdf:
+        show_pdf_preview(title + " (PDF preview)", moodle_submission_file.content)
+    elif moodle_submission_file.is_zip:
+        show_zip_preview(title + " (ZIP preview)", moodle_submission_file.content)
     else:
-        show_html_preview(title, "<pre>"+moodle_submission_file.content+"</pre>")
+        if isinstance(moodle_submission_file.content, str):
+            show_html_preview(title + " (HTML preview)", "<pre>"+moodle_submission_file.content+"</pre>")
+        else:
+            show_html_preview(title + " (HTML preview)", "<pre>"+str(moodle_submission_file.content, "utf-8")+"</pre>")
     return True
