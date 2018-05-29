@@ -45,8 +45,37 @@ Assignment objects provide a list of submissions. Each submission object provide
 
 ```
 >>> for assignment in assignments:
-...     for submission in assignment.submissions:
+...     for submission in assignment.submissions():
 ...         print("User {0} submitted {1} files.".format(submission.userid, len(submission.files)))
+```
+
+Student file uploads can be downloaded with the MoodleSubmissionFile class and previewed with a small integrated GUI application. The preview supports:
+
+- HTML text
+- PDF files
+- Images
+- Any other content, just shown in text form 
+- ZIP files of any of the above
+
+```
+>>> for assignment in assignments:
+...     for submission in assignment.submissions():
+...             for file_url in submission.files:
+...                     print(file_url)
+... 
+https://lms.beuth-hochschule.de/webservice/pluginfile.php/725647/assignsubmission_file/submission_files/32245/task03_ft.pdf
+https://lms.beuth-hochschule.de/webservice/pluginfile.php/725647/assignsubmission_file/submission_files/75356/Fehlerbaum.jpg
+https://lms.beuth-hochschule.de/webservice/pluginfile.php/725647/assignsubmission_file/submission_files/23454/Faultchar%2B-fertig.png
+```
+
+```
+>>> stud_upload=mt.MoodleSubmissionFile(conn=conn, url="https://lms.beuth-hochschule.de/webservice/pluginfile.php/725647/assignsubmission_file/submission_files/75356/Fehlerbaum.jpg")
+>>> stud_upload.is_pdf
+False
+>>> stud_upload.is_image
+True
+>>> from moodleteacher import preview
+>>> mt.preview.show_preview("Preview Window", [stud_upload])
 ```
 
 Submissions can be trivially graded:
@@ -59,14 +88,12 @@ Submissions can be trivially graded:
 
 There is also support for:
 
-  - Previewing textfield submissions, PDF files, and text files.
   - Running submitted files locally as shell script, for testing purposes.
   - Running submitted files remotely on another machine, for testing purposes.
   
+Take a look at the complex usage example in the [grader.py](grader.py) script, which shows nearly all features of the library in action.
 
-Check [the implementation](moodleteacher/__init__.py) for what you can do with the different parts of the library. Real documentation is planned.
-
-You can also take a look at the complex usage example in the [grader.py](grader.py) script, which shows nearly all featurs of the library in action.
+Real documentation is planned.
 
 ## License
 
