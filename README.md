@@ -49,7 +49,7 @@ Assignment objects provide a list of submissions. Each submission object provide
 ...         print("User {0} submitted {1} files.".format(submission.userid, len(submission.files)))
 ```
 
-Student file uploads can be downloaded with the MoodleSubmissionFile class and previewed with a small integrated GUI application. The preview supports:
+Student file uploads can be downloaded with the [MoodleSubmissionFile](https://github.com/troeger/moodleteacher/blob/f5914a82743928c4fe9b4cb6da95938bcbda4689/moodleteacher/__init__.py#L173) class and previewed with a small integrated GUI application. The preview supports:
 
 - HTML text
 - PDF files
