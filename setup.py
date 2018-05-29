@@ -8,7 +8,7 @@ with open('requirements.txt') as f:
 
 setup(
     name = 'moodleteacher',
-    version = '0.0.3',
+    version = '0.0.4',
     url = 'https://github.com/troeger/moodleteacher',
     license='BSD',
     author = 'Peter Tröger',
