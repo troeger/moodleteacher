@@ -190,22 +190,31 @@ class MoodleSubmissionFile():
     is_binary = None
     is_pdf = False
     is_zip = False
+    is_html = False
+    is_image = False
 
-    def __init__(self, conn, url):
-        response = requests.get(url, params={'token': conn.token})
-        self.encoding = response.encoding
-        disp = response.headers['content-disposition']
-        self.filename = re.findall('filename="(.+)"', disp)[0]
-        self.content_type = response.headers.get('content-type')
-        if self.content_type in self.BINARY_CONTENT:
-            self.content = response.content
-            if self.content_type == 'application/pdf':
-                self.is_pdf = True
-            if self.content_type == 'application/zip':
-                self.is_zip = True
-        else:
-            self.content = response.text
+    def __init__(self, *args, **kwargs):
+        if 'filename' in kwargs and 'content' in kwargs and 'content_type' in kwargs:
+            # Pseudo file
+            self.filename = kwargs['filename']
+            self.content = kwargs['content']
+            self.content_type = kwargs['content_type']
+        elif 'conn' in kwargs or 'url' in kwargs:
+            response = requests.get(kwargs['url'], params={'token': kwargs['conn'].token})
+            self.encoding = response.encoding
+            disp = response.headers['content-disposition']
+            self.filename = re.findall('filename="(.+)"', disp)[0]
+            self.content_type = response.headers.get('content-type')
+            if self.content_type in self.BINARY_CONTENT:
+                self.content = response.content
+            else:
+                self.content = response.text
         self.is_binary = False if isinstance(self.content, str) else True
+        if self.content_type:
+            self.is_pdf = True if 'application/pdf' in self.content_type else False
+            self.is_zip = True if 'application/zip' in self.content_type else False
+            self.is_html = True if 'text/html' in self.content_type else False
+            self.is_image = True if 'image/' in self.content_type else False
 
     def run_shellscript_local(self, args=[]):
         with tempfile.NamedTemporaryFile(mode='w+b' if self.is_binary else 'w+') as disk_file:
