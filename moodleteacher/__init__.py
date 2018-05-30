@@ -245,10 +245,7 @@ class MoodleSubmissionFile():
             disp = response.headers['content-disposition']
             self.filename = re.findall('filename="(.+)"', disp)[0]
             self.content_type = response.headers.get('content-type')
-            if self.content_type in self.BINARY_CONTENT:
-                self.content = response.content
-            else:
-                self.content = response.text
+            self.content = response.content
         else:
             raise ValueError
         self.is_binary = False if isinstance(self.content, str) else True

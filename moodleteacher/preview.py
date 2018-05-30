@@ -76,15 +76,32 @@ class ImageTab(wx.Panel):
         sizer.Add(self.image_ctrl, flag=wx.EXPAND |
                   wx.TOP | wx.ALL, border=8, proportion=1)
         self.SetSizer(sizer)
+        self.Bind(wx.EVT_SIZE, self.onResize)
+
+    def refresh(self):
+        width, height = self.GetSize()
+        if width > 0 and height > 0:
+            image_width = self.image.GetWidth()
+            image_height = self.image.GetHeight()
+            if image_height > image_width:
+                aspect_ratio = float(image_width) / float(image_height)
+            else:
+                aspect_ratio = float(image_height) / float(image_width)
+            new_image_height = height
+            new_image_width = width * aspect_ratio
+            self.image.Scale(new_image_height, new_image_width)
+        self.image_ctrl.SetBitmap(wx.BitmapFromImage(self.image))
+        self.Refresh()
+        self.Layout()
 
     def update(self, image_data):
         sbuf = io.BytesIO(image_data)
         self.image = wx.ImageFromStream(sbuf)
-# Perform on window resize, too
-#        W,H = self.GetSize()
-#        self.image.Rescale(W,H)
-        self.image_ctrl.SetBitmap(wx.BitmapFromImage(self.image))
-        self.Refresh()
+        self.refresh()
+
+    def onResize(self, event):
+        if self.image:
+            self.refresh()
 
 
 class MultiFileViewer(Viewer):
