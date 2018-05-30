@@ -61,12 +61,8 @@ class PdfTab(wx.Panel):
 
         self.SetSizer(vsizer)
 
-        self.pdf_file = tempfile.NamedTemporaryFile()
-
     def update(self, pdf_data):
-        self.pdf_file.seek(0)
-        self.pdf_file.write(pdf_data)
-        self.pdf_file.flush()
+        self.pdf_file = io.BytesIO(pdf_data)
         self.viewer.LoadFile(self.pdf_file)
 
 

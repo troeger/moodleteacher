@@ -226,11 +226,18 @@ class MoodleSubmissionFile():
         Variant 1: Manual construction, provide 'filename', 'content' and 'content_type'
         Variant 2: Construction from download, provide 'conn' and 'url'
         '''
-        if 'filename' in kwargs and 'content' in kwargs and 'content_type' in kwargs:
+        if 'filename' in kwargs and 'content' in kwargs:
             # Pseudo file
             self.filename = kwargs['filename']
             self.content = kwargs['content']
-            self.content_type = kwargs['content_type']
+            if 'content_type' in kwargs:
+                self.content_type = kwargs['content_type']
+            else:
+                # Special treatement of meta-files
+                if self.filename.startswith('__MACOSX'):
+                    self.content_type = 'text/plain'
+                else:
+                    self.content_type = mimetypes.guess_type(self.filename)[0]
         elif 'conn' in kwargs or 'url' in kwargs:
             response = requests.get(kwargs['url'], params={
                                     'token': kwargs['conn'].token})
@@ -285,18 +292,18 @@ class MoodleSubmissionFile():
                 for fname in arch_files:
                     data = input_zip.read(fname)
                     sub_f = MoodleSubmissionFile(
-                        filename=fname, content=data, content_type=mimetypes.guess_type(fname)[0])
-                    obj_list.Append(f)
+                        filename=fname, content=data)
+                    obj_list.append(sub_f)
             elif f.is_tar:
                 input_tar = tarfile.open(BytesIO(f.content))
                 arch_files = [info for info in input_tar.getmembers()]
                 for info in arch_files:
                     data = input_tar.extractfile(info)
                     sub_f = MoodleSubmissionFile(
-                        filename=info.name, content=data, content_type=mimetypes.guess_type(info.name)[0])
-                    obj_list.Append(f)
+                        filename=info.name, content=data)
+                    obj_list.append(sub_f)
             else:
-                obj_list.Append(f)
+                obj_list.append(f)
         return obj_list
 
     def run_shellscript_remote(self, user_name, host, target_path, args=[]):
