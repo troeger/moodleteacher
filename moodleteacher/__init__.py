@@ -7,7 +7,12 @@ import os.path
 import pickle
 import logging
 
+import mimetypes
+from zipfile import ZipFile
+from io import BytesIO
+
 import requests
+
 
 class MoodleConnection():
     '''
@@ -29,17 +34,19 @@ class MoodleConnection():
         '''
         if not moodle_host and not token:
             try:
-                with open(os.path.expanduser("~/.moodleteacher"),"rb") as f:
+                with open(os.path.expanduser("~/.moodleteacher"), "rb") as f:
                     moodle_host, token = pickle.load(f)
             except FileNotFoundError:
                 if not interactive:
-                    raise AttributeError("Please provide moodle_host + token, or set interactive=True")
+                    raise AttributeError(
+                        "Please provide moodle_host + token, or set interactive=True")
                 else:
                     print("Seems like this your first connection attempt ...")
                     moodle_host = input("URL of the Moodle host: ")
                     token = input("Moodle web service client security token: ")
-                    print("I will store these credentials in ~/.moodleteacher for the next time.")
-                    with open(os.path.expanduser("~/.moodleteacher"),"xb") as f:
+                    print(
+                        "I will store these credentials in ~/.moodleteacher for the next time.")
+                    with open(os.path.expanduser("~/.moodleteacher"), "xb") as f:
                         pickle.dump([moodle_host, token], f)
         self.token = token
         self.moodle_host = moodle_host
@@ -50,10 +57,12 @@ class MoodleConnection():
     def __str__(self):
         return "Connection to " + self.moodle_host
 
+
 class MoodleRequest():
     '''
         A Moodle web service request.
     '''
+
     def __init__(self, conn, funcname):
         '''
             Prepares a Moodle web service request.
@@ -70,7 +79,8 @@ class MoodleRequest():
         '''
             Perform a GET request to the Moodle web service.
         '''
-        logging.debug("Performing web service GET call for " + self.ws_params['wsfunction'])
+        logging.debug("Performing web service GET call for " +
+                      self.ws_params['wsfunction'])
         result = requests.get(self.conn.ws_url, params=self.ws_params)
         logging.debug("Result: " + str(result))
         result.raise_for_status()
@@ -78,14 +88,17 @@ class MoodleRequest():
 
     def post(self, post_params):
         '''
-            Perform a POST request to the Moodle web service with the given parameters.
+            Perform a POST request to the Moodle web service
+            with the given parameters.
         '''
         post_data = {**self.ws_params, **post_params}
-        logging.debug("Performing web service POST call for " + self.ws_params['wsfunction'])
+        logging.debug("Performing web service POST call for " +
+                      self.ws_params['wsfunction'])
         result = requests.post(self.conn.ws_url, params=post_data)
         logging.debug("Result: " + str(result))
         result.raise_for_status()
         return result
+
 
 class MoodleUser():
     '''
@@ -103,10 +116,12 @@ class MoodleUser():
                 user_id: The numerical user id.
         '''
         params = {'field': 'id', 'values[0]': str(user_id)}
-        response = MoodleRequest(conn, 'core_user_get_users_by_field').post(params).json()
+        response = MoodleRequest(
+            conn, 'core_user_get_users_by_field').post(params).json()
         assert(response[0]['id'] == user_id)
         self.fullname = response[0]['fullname']
         self.email = response[0]['email']
+
 
 class MoodleAssignment():
     '''
@@ -133,7 +148,8 @@ class MoodleAssignment():
         self.conn = conn
         self.course = course
         self.duedate = datetime.datetime.fromtimestamp(raw_json['duedate'])
-        self.cutoffdate = datetime.datetime.fromtimestamp(raw_json['cutoffdate'])
+        self.cutoffdate = datetime.datetime.fromtimestamp(
+            raw_json['cutoffdate'])
         if self.duedate < self.cutoffdate:
             self.deadline = self.cutoffdate
         else:
@@ -157,18 +173,22 @@ class MoodleAssignment():
     def submissions(self):
         return MoodleSubmissions(self.conn, self)
 
+
 class MoodleAssignments(list):
     '''
         A list of MoodleAssignment instances.
     '''
+
     def __init__(self, conn, course_filter=None):
-        response = MoodleRequest(conn, 'mod_assign_get_assignments').get().json()
+        response = MoodleRequest(
+            conn, 'mod_assign_get_assignments').get().json()
         for course_data in response['courses']:
             course = MoodleCourse(conn, course_data)
             if (course_filter and course.id in course_filter) or not course_filter:
                 for ass_data in course_data['assignments']:
                     assignment = MoodleAssignment(conn, course, ass_data)
                     self.append(assignment)
+
 
 class MoodleSubmissionFile():
     '''
@@ -179,9 +199,14 @@ class MoodleSubmissionFile():
                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                        'application/vnd.oasis.opendocument.text']
     # Content types that come as byte stream download, and not as text with an encoding
-    BINARY_CONTENT  = ['application/pdf', 'application/x-sh', 'application/zip'] + UNKNOWN_CONTENT
+    BINARY_CONTENT = ['application/pdf', 'application/x-sh',
+                      'application/zip'] + UNKNOWN_CONTENT
+    # Different content types for a TGZ file
+    TAR_CONTENT = ['application/x-gzip', 'application/gzip', 'application/tar',
+                   'application/tar+gzip', 'application/x-gtar', 'application/x-tgz']
+
     # Shell to suer for execution
-    SHELL = ['/bin/bash',]
+    SHELL = ['/bin/bash', ]
 
     encoding = None
     filename = None
@@ -192,15 +217,23 @@ class MoodleSubmissionFile():
     is_zip = False
     is_html = False
     is_image = False
+    is_tar = False
 
     def __init__(self, *args, **kwargs):
+        '''
+        Construct a new MoodleSubmissionFile object.
+
+        Variant 1: Manual construction, provide 'filename', 'content' and 'content_type'
+        Variant 2: Construction from download, provide 'conn' and 'url'
+        '''
         if 'filename' in kwargs and 'content' in kwargs and 'content_type' in kwargs:
             # Pseudo file
             self.filename = kwargs['filename']
             self.content = kwargs['content']
             self.content_type = kwargs['content_type']
         elif 'conn' in kwargs or 'url' in kwargs:
-            response = requests.get(kwargs['url'], params={'token': kwargs['conn'].token})
+            response = requests.get(kwargs['url'], params={
+                                    'token': kwargs['conn'].token})
             self.encoding = response.encoding
             disp = response.headers['content-disposition']
             self.filename = re.findall('filename="(.+)"', disp)[0]
@@ -209,12 +242,15 @@ class MoodleSubmissionFile():
                 self.content = response.content
             else:
                 self.content = response.text
+        else:
+            raise ValueError
         self.is_binary = False if isinstance(self.content, str) else True
         if self.content_type:
             self.is_pdf = True if 'application/pdf' in self.content_type else False
             self.is_zip = True if 'application/zip' in self.content_type else False
             self.is_html = True if 'text/html' in self.content_type else False
             self.is_image = True if 'image/' in self.content_type else False
+            self.is_tar = True if self.content_type in self.TAR_CONTENT else False
 
     def run_shellscript_local(self, args=[]):
         with tempfile.NamedTemporaryFile(mode='w+b' if self.is_binary else 'w+') as disk_file:
@@ -224,11 +260,44 @@ class MoodleSubmissionFile():
 
     def compile_with(self, cmd):
         with tempfile.TemporaryDirectory() as d:
-            f=open(d + os.sep + self.filename, mode="w")
+            f = open(d + os.sep + self.filename, mode="w")
             f.write(self.content)
             f.close()
             compile_output = subprocess.run([*cmd.split(' '), self.filename], cwd=d, stderr=subprocess.STDOUT)
-            return 
+            return
+
+    @staticmethod
+    def from_urls(conn, file_urls):
+        '''
+        Create a list of MoodleSubmissionFile objects from a list of URLs.
+
+        URLs for ZIP or TAR.GZ archives are also downloaded and automatically uncompressed.
+        In such a case, a single file URL may still lead to an array of MoodleSubmissionFile
+        objects being returned.
+        '''
+        obj_list = []
+        for file_url in file_urls:
+            f = MoodleSubmissionFile(conn=conn, url=file_url)
+            if f.is_zip:
+                input_zip = ZipFile(BytesIO(f.content))
+                arch_files = [
+                    info.filename for info in input_zip.infolist() if not info.is_dir()]
+                for fname in arch_files:
+                    data = input_zip.read(fname)
+                    sub_f = MoodleSubmissionFile(
+                        filename=fname, content=data, content_type=mimetypes.guess_type(fname)[0])
+                    obj_list.Append(f)
+            elif f.is_tar:
+                input_tar = tarfile.open(BytesIO(f.content))
+                arch_files = [info for info in input_tar.getmembers()]
+                for info in arch_files:
+                    data = input_tar.extractfile(info)
+                    sub_f = MoodleSubmissionFile(
+                        filename=info.name, content=data, content_type=mimetypes.guess_type(info.name)[0])
+                    obj_list.Append(f)
+            else:
+                obj_list.Append(f)
+        return obj_list
 
     def run_shellscript_remote(self, user_name, host, target_path, args=[]):
         '''
@@ -237,10 +306,11 @@ class MoodleSubmissionFile():
         with tempfile.NamedTemporaryFile(mode='w+b' if self.is_binary else 'w+') as disk_file:
             disk_file.write(self.content)
             disk_file.flush()
-            subprocess.run(['scp', disk_file.name, '{0}@{1}:{2}/'.format(user_name, host, target_path)], stderr=subprocess.STDOUT)
-            return subprocess.run([ 'ssh', 
-                                    '{0}@{1}'.format(user_name, host),
-                                    ' '.join([*self.SHELL, target_path + os.sep + os.path.basename(disk_file.name), *args])
+            subprocess.run(['scp', disk_file.name, '{0}@{1}:{2}/'.format(
+                user_name, host, target_path)], stderr=subprocess.STDOUT)
+            return subprocess.run(['ssh',
+                                   '{0}@{1}'.format(user_name, host),
+                                   ' '.join([*self.SHELL, target_path + os.sep + os.path.basename(disk_file.name), *args])
                                    ], stderr=subprocess.STDOUT)
 
     def as_text(self):
@@ -255,6 +325,7 @@ class MoodleSubmissionFile():
 
     def __str__(self):
         return "{0.filename} ({0.content_type})".format(self)
+
 
 class MoodleSubmission():
     '''
@@ -283,7 +354,8 @@ class MoodleSubmission():
 
     def __str__(self):
         num_files = len(self.files)
-        text = "Abgabe {0.id} durch Nutzer {0.userid} ({0.gradingstatus}), {1} Dateien, ".format(self, num_files)
+        text = "Abgabe {0.id} durch Nutzer {0.userid} ({0.gradingstatus}), {1} Dateien, ".format(
+            self, num_files)
         if self.textfield:
             text += "mit Text"
         else:
@@ -296,7 +368,7 @@ class MoodleSubmission():
     def save_grade(self, grade, feedback=""):
         # You can only give text feedback if your assignment is configured accordingly
         assert(feedback is "" or self.assignment.allows_feedback_comment)
-        params = {'assignmentid': self.assignment.id, 
+        params = {'assignmentid': self.assignment.id,
                   'userid': self.userid,
                   'grade': float(grade),
                   'attemptnumber': -1,
@@ -307,19 +379,24 @@ class MoodleSubmission():
                   # //content format (1 = HTML, 0 = MOODLE, 2 = PLAIN or 4 = MARKDOWN)
                   'plugindata[assignfeedbackcomments_editor][format]': 2
                   }
-        response = MoodleRequest(self.conn, 'mod_assign_save_grade').post(params).json()
+        response = MoodleRequest(
+            self.conn, 'mod_assign_save_grade').post(params).json()
+
 
 class MoodleSubmissions(list):
     '''
         A list of MoodleSubmission instances.
     '''
+
     def __init__(self, conn, assignment):
         params = {'assignmentids[0]': assignment.id}
-        response = MoodleRequest(conn, 'mod_assign_get_submissions').post(params).json()
+        response = MoodleRequest(
+            conn, 'mod_assign_get_submissions').post(params).json()
         for response_assignment in response['assignments']:
             assert(response_assignment['assignmentid'] == assignment.id)
             for subm_data in response_assignment['submissions']:
                 self.append(MoodleSubmission(conn, assignment, subm_data))
+
 
 class MoodleCourse():
     '''
@@ -342,11 +419,11 @@ class MoodleCourse():
 
     def get_admin_options(self, conn):
         params = {'courseids[0]': self.id}
-        response = MoodleRequest(conn, 'core_course_get_user_administration_options').post(params).json()
+        response = MoodleRequest(
+            conn, 'core_course_get_user_administration_options').post(params).json()
         for option in response['courses'][0]['options']:
             if option['name'] == 'gradebook':
-                if option['available'] == True:
+                if option['available'] is True:
                     self.can_grade = True
                 else:
                     self.can_grade = False
-
