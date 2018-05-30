@@ -62,14 +62,16 @@ if __name__ == '__main__':
 
     # Go through assignments, sorted by deadline (oldest first).
     for assignment in sorted(assignments, key=lambda x: x.deadline):
-        print("Assignment '{0.name}' in '{0.course}', due to {0.deadline}.".format(
-            assignment))
         if not assignment.course.can_grade:
-            print("  Skipping assignment, you have no rights to grade it.")
+            print("Skipping '{0.name}', you have no rights to grade it.".format(
+                assignment))
             continue
         if not assignment.deadline_over():
-            print("  Skipping assignment, still open.")
+            print("Skipping '{0.name}', still open.".format(
+                assignment))
             continue
+        print("Assignment '{0.name}' in '{0.course}', due to {0.deadline}:".format(
+            assignment))
         submissions = assignment.submissions()
         gradable = [sub for sub in submissions if not sub.is_empty(
         ) and sub.gradingstatus == sub.NOT_GRADED]
