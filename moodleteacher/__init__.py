@@ -242,8 +242,11 @@ class MoodleSubmissionFile():
             response = requests.get(kwargs['url'], params={
                                     'token': kwargs['conn'].token})
             self.encoding = response.encoding
-            disp = response.headers['content-disposition']
-            self.filename = re.findall('filename="(.+)"', disp)[0]
+            try:
+                disp = response.headers['content-disposition']
+                self.filename = re.findall('filename="(.+)"', disp)[0]
+            except KeyError:
+                self.filename = kwargs['url'].split('/')[-1]
             self.content_type = response.headers.get('content-type')
             self.content = response.content
         else:
