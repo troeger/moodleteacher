@@ -443,7 +443,7 @@ class MoodleSubmission():
                   'grade': float(grade),
                   'attemptnumber': -1,
                   'addattempt': int(True),
-                  'workflowstate': 'graded',
+                  'workflowstate': self.GRADED,
                   'applytoall': applytoall,
                   'plugindata[assignfeedbackcomments_editor][text]': str(feedback),
                   # //content format (1 = HTML, 0 = MOODLE, 2 = PLAIN or 4 = MARKDOWN)
