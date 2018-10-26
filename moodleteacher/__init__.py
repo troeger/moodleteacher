@@ -84,6 +84,8 @@ class MoodleRequest():
         result = requests.get(self.conn.ws_url, params=self.ws_params)
         logging.debug("Result: " + str(result))
         result.raise_for_status()
+        if "exception" in result.json().keys():
+            raise Exception("Error response for Moodle web service GET request ('{message}')".format(**result.json()))
         return result
 
     def post(self, post_params):
@@ -179,7 +181,7 @@ class MoodleAssignments(list):
         A list of MoodleAssignment instances.
     '''
 
-    def __init__(self, conn, course_filter=None):
+    def __init__(self, conn, course_filter=None, assignment_filter=None):
         response = MoodleRequest(
             conn, 'mod_assign_get_assignments').get().json()
         for course_data in response['courses']:
@@ -187,7 +189,8 @@ class MoodleAssignments(list):
             if (course_filter and course.id in course_filter) or not course_filter:
                 for ass_data in course_data['assignments']:
                     assignment = MoodleAssignment(conn, course, ass_data)
-                    self.append(assignment)
+                    if (assignment_filter and assignment.id in assignment_filter) or not assignment_filter:
+                        self.append(assignment)
 
 
 class MoodleSubmissionFile():

@@ -41,6 +41,15 @@ You can now fetch the list of assignments that are accesssible for you:
 ... 
 ```
 
+You can filter for particular assignments or courses, based on the Moodle IDs for them:
+
+```
+>>> assignments=mt.MoodleAssignments(conn, course_filter=[4711], assignment_filter=[1234])
+>>> for assign in assignments:
+...     print(assign)
+... 
+```
+
 Assignment objects provide a list of submissions. Each submission object provides the files (or text) submitted by the student:
 
 ```

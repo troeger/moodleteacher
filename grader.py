@@ -6,7 +6,7 @@
 # TODO:
 # - Remember last window size on next start
 
-import sys
+import argparse
 
 from moodleteacher import MoodleConnection, MoodleAssignments, MoodleUser, MoodleSubmissionFile
 from moodleteacher.preview import show_preview
@@ -56,27 +56,43 @@ if __name__ == '__main__':
     # stored in ~/.moodleteacher for the next time.
     conn = MoodleConnection(interactive=True)
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-o", "--overview", help="No grading, just give an overview.", default=False, action="store_true")
+    parser.add_argument(
+        "-c", "--courseid", help="Limit to this course ID only.", default=[], action='append')
+    parser.add_argument("-a", "--assignmentid",
+                        help="Limit to this assignment ID only.", default=[], action='append')
+    parser.add_argument("-g", "--gradableonly",
+                        help="Limit to assignments you have grading rights for.", default=False, action="store_true")
+    args = parser.parse_args()
+
     # Retrieve list of assignments objects.
     print("Fetching list of assignments ...")
-    assignments = MoodleAssignments(conn)
+    course_filter = [int(courseid) for courseid in args.courseid]
+    if course_filter is []:
+        course_filter = None
+    assignment_filter = [int(assignmentid) for assignmentid in args.assignmentid]
+    if assignment_filter is []:
+        assignment_filter = None
+    assignments = MoodleAssignments(conn, course_filter=course_filter, assignment_filter=assignment_filter)
 
     # Go through assignments, sorted by deadline (oldest first).
-    for assignment in sorted(assignments, key=lambda x: x.deadline):
-        if not assignment.course.can_grade:
-#            print("Skipping '{0.name}', you have no rights to grade it.".format(assignment))
-            continue
-        submissions = assignment.submissions()
-        gradable = [sub for sub in submissions if not sub.is_empty(
-        ) and sub.gradingstatus == sub.NOT_GRADED]
-        if len(sys.argv) > 1 and sys.argv[1] == "overview":
-            print("{1} gradable submissions: '{0.name}' in '{0.course}', {2}".format(
-                assignment, len(gradable), 'geschlossen' if assignment.deadline_over() else 'offen'))
-        else:
-            print("Assignment '{0.name}' in '{0.course}', due to {0.deadline}:".format(
-                assignment))
-            if not assignment.deadline_over():
-                print("  Skipping it, still open.".format(
+    assignments = sorted(assignments, key=lambda x: x.deadline)
+    for assignment in assignments:
+        if (not args.gradableonly or assignment.course.can_grade):
+            submissions = assignment.submissions()
+            gradable = [sub for sub in submissions if not sub.is_empty(
+            ) and sub.gradingstatus == sub.NOT_GRADED]
+            if args.overview:
+                print("{1} gradable submissions: '{0.name}' ({0.id}) in '{0.course}' ({0.course.id}), {2}".format(
+                    assignment, len(gradable), 'geschlossen' if assignment.deadline_over() else 'offen'))
+            else:
+                print("Assignment '{0.name}' in '{0.course}', due to {0.deadline}:".format(
                     assignment))
-                continue
-            for sub in gradable:
-                handle_submission(sub)
+                if not assignment.deadline_over():
+                    print("  Skipping it, still open.".format(
+                        assignment))
+                    continue
+                for sub in gradable:
+                    handle_submission(sub)
