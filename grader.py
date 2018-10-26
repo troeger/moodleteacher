@@ -18,9 +18,19 @@ def handle_submission(submission):
     '''
     print("#" * 78)
     # Submission has either textfield content or uploaed files, and was not graded so far.
-    # Fetch user details of the submitter
-    user_details = MoodleUser(conn, submission.userid)
-    print("Submission {0.id} by {1.fullname}".format(submission, user_details))
+    if submission.is_group_submission:
+        group = submission.assignment.course.get_group(submission.groupid)
+        if group:
+            members = [u.fullname for u in submission.get_group_members()]
+            print("Submission {0.id} by group {1} - {2}".format(submission, group, members))
+            display_name = group.fullname
+        else:
+            print("Submission looks like group work, but the group ID is not known. Skipping it...")
+            return
+    else:
+        user = submission.assignment.course.users[submission.userid]
+        print("Submission {0.id} by {1.fullname} ({1.id})".format(submission, user))
+        display_name = user.fullname
     # Ask user what to do
     inp = 'x'
     while inp != 'g' and inp != '':
@@ -33,7 +43,7 @@ def handle_submission(submission):
             else:
                 files = []
             files += MoodleSubmissionFile.from_urls(conn, submission.files)
-            if not show_preview(user_details.fullname, files):
+            if not show_preview(display_name, files):
                 print("Sorry, preview not possible.")
         if inp == 'k':
             return

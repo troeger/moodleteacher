@@ -10,7 +10,7 @@ import logging
 import mimetypes
 from zipfile import ZipFile
 from io import BytesIO
-
+from collections import defaultdict
 import requests
 
 
@@ -99,6 +99,10 @@ class MoodleRequest():
         result = requests.post(self.conn.ws_url, params=post_data)
         logging.debug("Result: " + str(result))
         result.raise_for_status()
+        data = result.json()
+        if isinstance(data, dict):
+            if "exception" in data.keys():
+                raise Exception("Error response for Moodle web service POST request ('{message}')".format(**result.json()))
         return result
 
 
@@ -108,8 +112,19 @@ class MoodleUser():
     '''
     fullname = None
     email = None
+    id = None
 
-    def __init__(self, conn, user_id):
+    @classmethod
+    def from_json(cls, raw_json):
+        obj = cls()
+        obj.id = raw_json['id']
+        obj.fullname = raw_json.get('fullname','')
+        obj.email = raw_json.get('email','')
+        obj.groups = raw_json.get('email',[])
+        return obj
+
+    @classmethod
+    def from_userid(cls, conn, user_id):
         '''
             Fetch information about a user, based in the user id.
 
@@ -117,12 +132,43 @@ class MoodleUser():
                 conn: The MoodleConnection object.
                 user_id: The numerical user id.
         '''
+        obj = cls()
+        obj.id = user_id
         params = {'field': 'id', 'values[0]': str(user_id)}
         response = MoodleRequest(
             conn, 'core_user_get_users_by_field').post(params).json()
-        assert(response[0]['id'] == user_id)
-        self.fullname = response[0]['fullname']
-        self.email = response[0]['email']
+        if response != []:
+            assert(response[0]['id'] == user_id)
+            obj.fullname = response[0]['fullname']
+            obj.email = response[0]['email']
+        else:
+            obj.fullname = "<Unknown>"
+            obj.email = "<Unknown>"
+        return obj
+
+    def __str__(self):
+        return "{0.fullname} ({0.id})".format(self)
+
+
+class MoodleGroup():
+    '''
+        A Moodle user group.
+    '''
+    fullname = None
+    id = None
+    members = {}
+    course = None
+
+    @classmethod
+    def from_json(cls, course, raw_json):
+        obj = cls()
+        obj.id = raw_json['id']
+        obj.course = course
+        obj.fullname = raw_json.get('name','')
+        return obj
+
+    def __str__(self):
+        return "{0.fullname} ({0.id})".format(self)
 
 
 class MoodleAssignment():
@@ -350,6 +396,7 @@ class MoodleSubmission():
         self.raw_json = raw_json
         self.id = raw_json['id']
         self.userid = raw_json['userid']
+        self.groupid = raw_json['groupid']
         self.status = raw_json['status']
         self.gradingstatus = raw_json['gradingstatus']
         self.files = []
@@ -375,11 +422,19 @@ class MoodleSubmission():
     def is_empty(self):
         return len(self.files) == 0 and not self.textfield
 
+    def is_group_submission(self):
+        return self.userid == 0 and self.groupid != 0
+
+    def get_group_members(self):
+        assert(self.is_group_submission())
+        return self.assignment.course.get_group_members(self.groupid)
+
     def save_grade(self, grade, feedback=""):
         # You can only give text feedback if your assignment is configured accordingly
         assert(feedback is "" or self.assignment.allows_feedback_comment)
         params = {'assignmentid': self.assignment.id,
                   'userid': self.userid,
+                  'groupid': self.groupid,
                   'grade': float(grade),
                   'attemptnumber': -1,
                   'addattempt': int(True),
@@ -417,12 +472,42 @@ class MoodleCourse():
     fullname = None
     shortname = None
     can_grade = None
+    users = {}          # key is user id, value is MoodleUser object
+    groups = {}         # key is group id, value is MoodleGroup object
+    group_members = defaultdict(set)  # key is group ID, value id user ID
 
     def __init__(self, conn, raw_json):
         self.id = raw_json['id']
         self.fullname = raw_json['fullname']
         self.shortname = raw_json['shortname']
         self.get_admin_options(conn)
+        # fetch list of users and groups in this course
+        params = {'courseid': self.id}
+        raw_json = MoodleRequest(
+            conn, 'core_enrol_get_enrolled_users').post(params).json()
+        for raw_json_user in raw_json:
+            moodle_user = MoodleUser.from_json(raw_json_user)
+            # Django get_or_create ... in ugly.
+            self.users[moodle_user.id] = moodle_user
+            if 'groups' in raw_json_user.keys():
+                for raw_json_group in raw_json_user['groups']:
+                    moodle_group = MoodleGroup.from_json(self, raw_json_group)
+                    self.groups[moodle_group.id] = moodle_group
+                    self.group_members[moodle_group.id].add(moodle_user.id)
+
+    def get_group(self, group_id):
+        if group_id in self.groups.keys():
+            return self.groups[group_id]
+        else:
+            return None
+
+    def get_user(self, user_id):
+        return self.users[user_id]
+
+    def get_group_members(self, group_id):
+        return [self.users[user_id] for user_id in self.group_members[group_id]]
+
+
 
     def __str__(self):
         return(self.fullname)
