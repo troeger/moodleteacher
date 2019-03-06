@@ -6,6 +6,7 @@ import os
 import os.path
 import pickle
 import logging
+import collections
 
 import mimetypes
 from zipfile import ZipFile
@@ -72,16 +73,28 @@ class MoodleRequest():
                 funcname: The name of the Moodle web service function.
         '''
         self.conn = conn
-        self.ws_params = conn.ws_params
+        self.ws_params = conn.ws_params.copy()
         self.ws_params['wsfunction'] = funcname
 
-    def get(self):
+    def _encode_param(self, params, key, value):
+        if isinstance(value, collections.Sequence):
+            for i, v in enumerate(value):
+                self._encode_param(params,"{}[{}]".format(key, i), v)
+            return
+        if isinstance(value, int):
+            value = str(value)
+        params[key] = value
+
+    def get(self, **get_params):
         '''
             Perform a GET request to the Moodle web service.
         '''
+        params = self.ws_params.copy()
+        for key, value in get_params.items():
+            self._encode_param(params, key, value)
         logging.debug("Performing web service GET call for " +
-                      self.ws_params['wsfunction'])
-        result = requests.get(self.conn.ws_url, params=self.ws_params)
+                      repr(params))
+        result = requests.get(self.conn.ws_url, params=params)
         logging.debug("Result: " + str(result))
         result.raise_for_status()
         if "exception" in result.json().keys():
@@ -229,8 +242,11 @@ class MoodleAssignments(list):
     '''
 
     def __init__(self, conn, course_filter=None, assignment_filter=None):
+        params = {}
+        if course_filter:
+            params['courseids'] = course_filter
         response = MoodleRequest(
-            conn, 'mod_assign_get_assignments').get().json()
+            conn, 'mod_assign_get_assignments').get(**params).json()
         for course_data in response['courses']:
             course = MoodleCourse(conn, course_data)
             if (course_filter and course.id in course_filter) or not course_filter:
