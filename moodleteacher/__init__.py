@@ -432,19 +432,19 @@ class MoodleSubmission():
     def save_grade(self, grade, feedback="", applytoall=True):
         # You can only give text feedback if your assignment is configured accordingly
         assert(feedback is "" or self.assignment.allows_feedback_comment)
-        if self.is_group_submission:
-            user_id = self.get_group_members()[0].id
-            applytoall = int(True)
+        if self.is_group_submission():
+            userid = self.get_group_members()[0].id
         else:
-            user_id = self.user_id
-            applytoall = int(False)
+            userid = self.userid
         params = {'assignmentid': self.assignment.id,
-                  'userid': user_id,
+                  'userid': userid,
                   'grade': float(grade),
                   'attemptnumber': -1,
                   'addattempt': int(True),
                   'workflowstate': self.GRADED,
-                  'applytoall': applytoall,
+                  # always apply grading to team
+                  # if the assignment has no group submission, this has no effect.
+                  'applytoall': int(True),
                   'plugindata[assignfeedbackcomments_editor][text]': str(feedback),
                   # //content format (1 = HTML, 0 = MOODLE, 2 = PLAIN or 4 = MARKDOWN)
                   'plugindata[assignfeedbackcomments_editor][format]': 2
