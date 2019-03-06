@@ -70,9 +70,9 @@ if __name__ == '__main__':
     parser.add_argument(
         "-o", "--overview", help="No grading, just give an overview.", default=False, action="store_true")
     parser.add_argument(
-        "-c", "--courseid", help="Limit to this course ID only.", default=[], action='append')
+        "-c", "--courseid", help="Limit to this course ID (check view.php?id=...).", default=[], action='append')
     parser.add_argument("-a", "--assignmentid",
-                        help="Limit to this assignment CMID only.", default=[], action='append')
+                        help="Limit to this assignment ID (check view.php?id=...).", default=[], action='append')
     parser.add_argument("-g", "--gradableonly",
                         help="Limit to assignments you have grading rights for.", default=False, action="store_true")
     args = parser.parse_args()
