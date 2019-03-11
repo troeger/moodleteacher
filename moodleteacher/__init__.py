@@ -97,7 +97,8 @@ class MoodleRequest():
         result = requests.get(self.conn.ws_url, params=params)
         logging.debug("Result: " + str(result))
         result.raise_for_status()
-        if "exception" in result.json().keys():
+        data = result.json()
+        if isinstance(data, dict) and "exception" in data:
             raise Exception("Error response for Moodle web service GET request ('{message}')".format(**result.json()))
         return result
 
@@ -114,7 +115,7 @@ class MoodleRequest():
         result.raise_for_status()
         data = result.json()
         if isinstance(data, dict):
-            if "exception" in data.keys():
+            if "exception" in data:
                 raise Exception("Error response for Moodle web service POST request ('{message}')".format(**result.json()))
         return result
 
