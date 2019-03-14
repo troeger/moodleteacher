@@ -1,8 +1,12 @@
-wxPython
+# always needed
 requests
+# needed for preview UI
+wxPython
 PyMuPDF
+# needed for development
 bumpversion
 wheel
 twine
 keyring
+sphinx
 
