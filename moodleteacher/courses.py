@@ -48,6 +48,8 @@ class MoodleCourse():
     def get_group_members(self, group_id):
         return [self.users[user_id] for user_id in self.group_members[group_id]]
 
+
+
     def __str__(self):
         return(self.fullname)
 

@@ -37,6 +37,7 @@ class MoodleAssignment():
         else:
             self.deadline = self.duedate
         self.id = raw_json['id']
+        self.cmid = raw_json['cmid']
         self.name = raw_json['name']
         self.allows_feedback_comment = False
         for config in raw_json['configs']:
@@ -62,12 +63,15 @@ class MoodleAssignments(list):
     '''
 
     def __init__(self, conn, course_filter=None, assignment_filter=None):
+        params = {}
+        if course_filter:
+            params['courseids'] = course_filter
         response = MoodleRequest(
-            conn, 'mod_assign_get_assignments').get().json()
+            conn, 'mod_assign_get_assignments').get(**params).json()
         for course_data in response['courses']:
             course = MoodleCourse(conn, course_data)
             if (course_filter and course.id in course_filter) or not course_filter:
                 for ass_data in course_data['assignments']:
                     assignment = MoodleAssignment(conn, course, ass_data)
-                    if (assignment_filter and assignment.id in assignment_filter) or not assignment_filter:
+                    if (assignment_filter and assignment.cmid in assignment_filter) or not assignment_filter:
                         self.append(assignment)

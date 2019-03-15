@@ -5,7 +5,7 @@ default: build
 
 # Prepare VirtualEnv by installing project dependencies
 venv/bin/activate: requirements.txt 
-	test -d venv || python3.6 -m venv venv
+	test -d venv || python3 -m venv venv
 	venv/bin/pip install -r requirements.txt
 	touch venv/bin/activate
 
