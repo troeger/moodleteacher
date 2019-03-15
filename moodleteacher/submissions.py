@@ -67,8 +67,7 @@ class MoodleSubmission():
                   # //content format (1 = HTML, 0 = MOODLE, 2 = PLAIN or 4 = MARKDOWN)
                   'plugindata[assignfeedbackcomments_editor][format]': 2
                   }
-        response = MoodleRequest(
-            self.conn, 'mod_assign_save_grade').post(params).json()
+        MoodleRequest(self.conn, 'mod_assign_save_grade').post(params)
 
 
 class MoodleSubmissions(list):
@@ -84,3 +83,6 @@ class MoodleSubmissions(list):
             assert(response_assignment['assignmentid'] == assignment.id)
             for subm_data in response_assignment['submissions']:
                 self.append(MoodleSubmission(conn, assignment, subm_data))
+
+    def __str__(self):
+        return "\n".join([str(sub) for sub in self])
