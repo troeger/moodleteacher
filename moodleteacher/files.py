@@ -57,15 +57,15 @@ class MoodleFile():
                    'application/tar+gzip', 'application/x-gtar', 'application/x-tgz']
 
     conn = None
-    name = None
-    folder = None
+    name = None                  # File name, without path information
+    folder = None                # The MoodeFolder this file belongs to
     size = None
     url = None
     mimetype = None
     encoding = None
     content_type = None
     content = None
-    relative_path = ''
+    relative_path = ''           # The path on the server, relative to MoodleFolder
     owner = None
     is_binary = None
     is_pdf = False
@@ -128,6 +128,29 @@ class MoodleFile():
                 return self.content.decode("ISO-8859-1", errors="ignore")
         else:
             return self.content
+
+    def unpack(self, working_dir):
+        '''
+        Unpack the content of the submission to the working directory.
+        '''
+        assert(self.content)
+        self.analyze_content()
+
+        dircontent = os.listdir(working_dir)
+        logger.debug("Content of %s before unarchiving: %s" %
+                     (working_dir, str(dircontent)))
+
+        if self.is_zip:
+            input_zip = ZipFile(BytesIO(self.content))
+            zip.extractall(working_dir)
+        elif self.is_tar:
+            input_tar = tarfile.open(BytesIO(self.content))
+            tar.extractall(working_dir)
+        else:
+            logger.debug("Assuming non-archive, copying student submission directly.")
+            f = open(working_dir + os.sep + self.name, 'w+b' if self.is_binary else 'w+')
+            f.write(self.content)
+            f.close()
 
 
 class MoodleSubmissionFile(MoodleFile):
