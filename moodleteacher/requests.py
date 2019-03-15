@@ -1,6 +1,8 @@
 import collections
-import logging
 import requests
+
+import logging
+logger = logging.getLogger('moodleteacher')
 
 
 class MoodleRequest():
@@ -36,10 +38,10 @@ class MoodleRequest():
         params = self.ws_params.copy()
         for key, value in get_params.items():
             self._encode_param(params, key, value)
-        logging.debug("Performing web service GET call for " +
+        logger.debug("Performing web service GET call for " +
                       repr(params))
         result = requests.get(self.conn.ws_url, params=params)
-        logging.debug("Result: " + str(result))
+        logger.debug("Result: " + str(result))
         result.raise_for_status()
         data = result.json()
         if isinstance(data, dict) and "exception" in data:
@@ -52,10 +54,10 @@ class MoodleRequest():
             with the given parameters.
         '''
         post_data = {**self.ws_params, **post_params}
-        logging.debug("Performing web service POST call for " +
+        logger.debug("Performing web service POST call for " +
                       self.ws_params['wsfunction'])
         result = requests.post(self.conn.ws_url, params=post_data)
-        logging.debug("Result: " + str(result))
+        logger.debug("Result: " + str(result))
         result.raise_for_status()
         data = result.json()
         if isinstance(data, dict):
