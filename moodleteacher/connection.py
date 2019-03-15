@@ -28,7 +28,7 @@ class MoodleConnection():
             try:
                 with open(os.path.expanduser("~/.moodleteacher"), "rb") as f:
                     moodle_host, token = pickle.load(f)
-            except FileNotFoundError:
+            except Exception:
                 if not interactive:
                     raise AttributeError(
                         "Please provide moodle_host + token, or set interactive=True")

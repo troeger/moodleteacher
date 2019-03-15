@@ -25,7 +25,7 @@ class MoodleRequest():
     def _encode_param(self, params, key, value):
         if isinstance(value, collections.Sequence):
             for i, v in enumerate(value):
-                self._encode_param(params,"{}[{}]".format(key, i), v)
+                self._encode_param(params, "{}[{}]".format(key, i), v)
             return
         if isinstance(value, int):
             value = str(value)
@@ -39,13 +39,14 @@ class MoodleRequest():
         for key, value in get_params.items():
             self._encode_param(params, key, value)
         logger.debug("Performing web service GET call for " +
-                      repr(params))
+                     repr(params))
         result = requests.get(self.conn.ws_url, params=params)
         logger.debug("Result: " + str(result))
         result.raise_for_status()
         data = result.json()
         if isinstance(data, dict) and "exception" in data:
-            raise Exception("Error response for Moodle web service GET request ('{message}')".format(**result.json()))
+            raise Exception(
+                "Error response for Moodle web service GET request ('{message}')".format(**result.json()))
         return result
 
     def post(self, post_params):
@@ -55,12 +56,13 @@ class MoodleRequest():
         '''
         post_data = {**self.ws_params, **post_params}
         logger.debug("Performing web service POST call for " +
-                      self.ws_params['wsfunction'])
+                     self.ws_params['wsfunction'])
         result = requests.post(self.conn.ws_url, params=post_data)
         logger.debug("Result: " + str(result))
         result.raise_for_status()
         data = result.json()
         if isinstance(data, dict):
             if "exception" in data:
-                raise Exception("Error response for Moodle web service POST request ('{message}')".format(**result.json()))
+                raise Exception(
+                    "Error response for Moodle web service POST request ('{message}')".format(**result.json()))
         return result
