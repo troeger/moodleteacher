@@ -115,6 +115,20 @@ class MoodleFile():
             self.is_image = True if 'image/' in self.content_type else False
             self.is_tar = True if self.content_type in self.TAR_CONTENT else False
 
+    def as_text(self):
+        '''
+        Return the content of the file as printable text.
+        '''
+        assert(self.content)
+        if self.is_binary:
+            if self.encoding:
+                return self.content.decode(self.encoding)
+            else:
+                # Fallback
+                return self.content.decode("ISO-8859-1", errors="ignore")
+        else:
+            return self.content
+
 
 class MoodleSubmissionFile(MoodleFile):
     '''
@@ -213,17 +227,6 @@ class MoodleSubmissionFile(MoodleFile):
                                    '{0}@{1}'.format(user_name, host),
                                    ' '.join([*self.SHELL, target_path + os.sep + os.path.basename(disk_file.name), *args])
                                    ], stderr=subprocess.STDOUT)
-
-    def as_text(self):
-        assert(self.content)
-        if self.is_binary:
-            if self.encoding:
-                return self.content.decode(self.encoding)
-            else:
-                # No information from web server, final fallback.
-                return self.content.decode("ISO-8859-1", errors="ignore")
-        else:
-            return self.content
 
     def __str__(self):
         return "{0.filename} ({0.content_type})".format(self)
