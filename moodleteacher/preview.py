@@ -1,4 +1,3 @@
-import tempfile
 import html
 import io
 
