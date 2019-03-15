@@ -24,7 +24,14 @@ class MoodleFolder():
         self.visible = bool(raw_json['visible'])
         self.files = []
         for file_detail in raw_json['contents']:
-            self.files.append(MoodleFile(self.conn, self, file_detail))
+            f = MoodleFile(self.conn, raw_json['filename'])
+            f.folder = self
+            f.size = raw_json['filesize']
+            f.url = raw_json['fileurl']
+            f.mimetype = raw_json['mimetype']
+            f.relative_path = raw_json['filepath']
+            f.owner = self.course.get_user(raw_json['userid'])
+            self.files.append(f)
 
     def __str__(self):
         return "{0.name} ({1} files)".format(self, len(self.files))
@@ -32,25 +39,56 @@ class MoodleFolder():
 
 class MoodleFile(list):
     '''
-        A generic Moodle file. Student uploads are handled separately
-        in MoodleSubmissionFile.
+        A generic Moodle file.
     '''
-    def __init__(self, conn, folder, raw_json):
-        self.folder = folder
-        self.filename = raw_json['filename']
-        self.filesize = raw_json['filesize']
-        self.fileurl = raw_json['fileurl']
-        self.mimetype = raw_json['mimetype']
-        self.filepath = raw_json['filepath']  # relative to folder
-        self.user = self.folder.course.get_user(raw_json['userid'])
+    conn = None
+    name = None
+    folder = None
+    size = None
+    url = None
+    mimetype = None
+    encoding = None
+    content_type = None
+    relative_path = ''
+    owner = None
+
+    def __init__(self, conn, name):
+        self.conn = conn
+        self.name = name
 
     def __str__(self):
-        return "  {0.filepath}{0.filename} ({0.mimetype})".format(self)
+        return "{0.filepath}{0.filename}".format(self)
+
+    def download(self):
+        '''
+        Download the file content and stores in in self.content.
+        Expects self.url to be set.
+
+        The method fills self.name, self.content_type and 
+        self.encoding with the determined information.
+        If self.name is already set, it will not be changed.
+        '''
+        assert(self.url)
+        response = requests.get(self.url, params={
+                                'token': self.conn.token})
+        self.encoding = response.encoding
+        if not self.name:
+            try:
+                disp = response.headers['content-disposition']
+                self.name = re.findall('filename="(.+)"', disp)[0]
+            except KeyError:
+                self.name = self.url.split('/')[-1]
+        self.content_type = response.headers.get('content-type')
+        self.content = response.content
+
+
 
 
 class MoodleSubmissionFile():
     '''
         A single student submission file in Moodle.
+
+        TODO: Migrate generic functionality from here to MoodleFile.
     '''
     # Content types we don't know how to deal with in the preview
     UNKNOWN_CONTENT = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
