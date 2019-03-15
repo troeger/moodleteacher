@@ -30,6 +30,11 @@ bumpversion:
 pypi-push: check-venv build
 	twine upload dist/*
 
+# Run test suite
+test: venv
+	python3 -m unittest
+
+
 # Clean temporary files
 clean:
 	rm -fr  build
