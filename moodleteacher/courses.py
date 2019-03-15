@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from .requests import MoodleRequest
 from .users import MoodleUser, MoodleGroup
+from .files import MoodleFolder
 
 
 class MoodleCourse():
@@ -17,10 +18,31 @@ class MoodleCourse():
     groups = {}         # key is group id, value is MoodleGroup object
     group_members = defaultdict(set)  # key is group ID, value id user ID
 
-    def __init__(self, conn, raw_json):
-        self.id = raw_json['id']
-        self.fullname = raw_json['fullname']
-        self.shortname = raw_json['shortname']
+    @classmethod
+    def from_raw_json(cls, conn, raw_json):
+        '''
+        Create a MoodleCourse object from raw JSON information.
+        '''
+        return cls(conn=conn, course_id=raw_json['id'],
+                   fullname=raw_json['fullname'],
+                   shortname=raw_json['shortname'])
+
+    @classmethod
+    def from_course_id(cls, conn, course_id):
+        '''
+        Create a MoodleCourse object just from a course ID.
+
+        TODO: Determine missing information pieces with an API call.
+        '''
+        return cls(conn=conn, course_id=course_id,
+                   fullname="",
+                   shortname="")
+
+    def __init__(self, conn, course_id, fullname, shortname):
+        self.conn = conn
+        self.id = course_id
+        self.fullname = fullname
+        self.shortname = shortname
         self.get_admin_options(conn)
         # fetch list of users and groups in this course
         params = {'courseid': self.id}
@@ -37,18 +59,43 @@ class MoodleCourse():
                     self.group_members[moodle_group.id].add(moodle_user.id)
 
     def get_group(self, group_id):
+        '''
+        Returns MoodleGroup object for this user id,
+        or None if not known.
+        '''
         if group_id in self.groups.keys():
             return self.groups[group_id]
         else:
             return None
 
     def get_user(self, user_id):
-        return self.users[user_id]
+        '''
+        Returns MoodleUser object for this user id,
+        or None if not known.
+        '''
+        if user_id in self.users.keys():
+            return self.users[user_id]
+        else:
+            return None
 
     def get_group_members(self, group_id):
         return [self.users[user_id] for user_id in self.group_members[group_id]]
 
+    def get_folders(self):
+        '''
+        Determine folders that are part of the course.
 
+        Returns list of MoodleFolder objects.
+        '''
+        result = []
+        params = {'courseid': self.id}
+        raw_json = MoodleRequest(
+            self.conn, 'core_course_get_contents').post(params).json()
+        for section in raw_json:
+            for module in section['modules']:
+                if module['modname'] == 'folder':
+                    result.append(MoodleFolder(self.conn, self, module))
+        return result
 
     def __str__(self):
         return(self.fullname)

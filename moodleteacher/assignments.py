@@ -69,7 +69,7 @@ class MoodleAssignments(list):
         response = MoodleRequest(
             conn, 'mod_assign_get_assignments').get(**params).json()
         for course_data in response['courses']:
-            course = MoodleCourse(conn, course_data)
+            course = MoodleCourse.from_raw_json(conn, course_data)
             if (course_filter and course.id in course_filter) or not course_filter:
                 for ass_data in course_data['assignments']:
                     assignment = MoodleAssignment(conn, course, ass_data)

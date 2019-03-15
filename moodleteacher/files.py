@@ -16,26 +16,36 @@ class MoodleFolder():
         A single folder in Moodle.
     '''
 
-    def __init__(self, conn, raw_json):
+    def __init__(self, conn, course, raw_json):
         self.conn = conn
-        self.raw_json = raw_json
+        self.course = course
         self.id = raw_json['id']
-        self.course_id = raw_json['course']
         self.name = raw_json['name']
         self.visible = bool(raw_json['visible'])
-        print(raw_json)
+        self.files = []
+        for file_detail in raw_json['contents']:
+            self.files.append(MoodleFile(self.conn, self, file_detail))
+
+    def __str__(self):
+        return "{0.name} ({1} files)".format(self, len(self.files))
 
 
-class MoodleFolders(list):
+class MoodleFile(list):
     '''
-        A list of MoodleFolder instances.
+        A generic Moodle file. Student uploads are handled separately
+        in MoodleSubmissionFile.
     '''
+    def __init__(self, conn, folder, raw_json):
+        self.folder = folder
+        self.filename = raw_json['filename']
+        self.filesize = raw_json['filesize']
+        self.fileurl = raw_json['fileurl']
+        self.mimetype = raw_json['mimetype']
+        self.filepath = raw_json['filepath']  # relative to folder
+        self.user = self.folder.course.get_user(raw_json['userid'])
 
-    def __init__(self, conn):
-        response = MoodleRequest(
-            conn, 'mod_folder_get_folders_by_courses').get().json()
-        for folder_data in response['folders']:
-            self.append(MoodleFolder(conn, folder_data))
+    def __str__(self):
+        return "  {0.filepath}{0.filename} ({0.mimetype})".format(self)
 
 
 class MoodleSubmissionFile():
