@@ -3,7 +3,12 @@ from moodleteacher.connection import MoodleConnection
 from moodleteacher.assignments import MoodleAssignments
 from moodleteacher.courses import MoodleCourse
 
-TEST_COURSE_ID = 14711
+# Note: We assume that Moodleteacher was started in interactive mode
+#       before, so that credentials and URL are cached, and that we can
+#       use the resources defined below for testing.
+
+TEST_COURSE_ID = 5787
+TEST_FOLDER_ID = 432300   # should contain at least one file
 
 
 class Test(unittest.TestCase):
@@ -19,6 +24,5 @@ class Test(unittest.TestCase):
         course = MoodleCourse.from_course_id(self.conn, TEST_COURSE_ID)
         folders = course.get_folders()
         for folder in folders:
-            print(folder)
             for file in folder.files:
-                print(file)
+                file.download()
