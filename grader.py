@@ -8,7 +8,9 @@
 
 import argparse
 
-from moodleteacher import MoodleConnection, MoodleAssignments, MoodleUser, MoodleSubmissionFile
+from moodleteacher.connection import MoodleConnection
+from moodleteacher.assignments import MoodleAssignments
+from moodleteacher.files import MoodleSubmissionFile
 from moodleteacher.preview import show_preview
 
 
