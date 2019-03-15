@@ -5,7 +5,7 @@ from moodleteacher.courses import MoodleCourse
 
 # Note: We assume that Moodleteacher was started in interactive mode
 #       before, so that credentials and URL are cached, and that we can
-#       use the resources defined below for testing.
+#       use the resources defined below for testing with the cached account.
 
 TEST_COURSE_ID = 5787
 TEST_FOLDER_ID = 432300   # should contain at least one file

@@ -10,10 +10,10 @@ These instructions will get you the library up and running on your local machine
 
 ### Installation
 
-The library demands at least Python 3.6. Install the software with 
+The library demands Python 3. Install the software with 
 
 ```
-pip3.6 install moodleteacher
+pip3 install moodleteacher
 ```
 
 Start an interactive Python session and load the library:

@@ -1,14 +1,13 @@
-import subprocess
 import mimetypes
 from zipfile import ZipFile
 from io import BytesIO
 import os
 import os.path
 import re
-import tempfile
 import requests
+import shutil
 
-from .requests import MoodleRequest
+from .exceptions import *
 
 
 class MoodleFolder():
@@ -134,6 +133,14 @@ class MoodleFile():
         Unpack the content of the submission to the working directory.
         '''
         assert(self.content)
+
+        dusage = shutil.disk_usage(working_dir)
+        if dusage.free < 1024 * 1024 * 50:   # 50 MB
+            info_student = "Internal error with the validator. Please contact your course responsible."
+            info_tutor = "Error: Execution cancelled, less then 50MB of disk space free on the executor."
+            logger.error(info_tutor)
+            raise JobException(info_student=info_student, info_tutor=info_tutor)
+
         self.analyze_content()
 
         dircontent = os.listdir(working_dir)
@@ -142,10 +149,10 @@ class MoodleFile():
 
         if self.is_zip:
             input_zip = ZipFile(BytesIO(self.content))
-            zip.extractall(working_dir)
+            input_zip.extractall(working_dir)
         elif self.is_tar:
             input_tar = tarfile.open(BytesIO(self.content))
-            tar.extractall(working_dir)
+            input_tar.extractall(working_dir)
         else:
             logger.debug("Assuming non-archive, copying student submission directly.")
             f = open(working_dir + os.sep + self.name, 'w+b' if self.is_binary else 'w+')
@@ -157,8 +164,6 @@ class MoodleSubmissionFile(MoodleFile):
     '''
         A single student submission file in Moodle.
     '''
-    SHELL = ['/bin/bash', ]
-
     def __init__(self, *args, **kwargs):
         '''
         Construct a new MoodleSubmissionFile object.
@@ -184,22 +189,6 @@ class MoodleSubmissionFile(MoodleFile):
             self.download()
         else:
             raise ValueError
-
-    def run_shellscript_local(self, args=[]):
-        assert(self.content)
-        with tempfile.NamedTemporaryFile(mode='w+b' if self.is_binary else 'w+') as disk_file:
-            disk_file.write(self.content)
-            disk_file.flush()
-            return subprocess.run([*self.SHELL, disk_file.name, *args], stderr=subprocess.STDOUT)
-
-    def compile_with(self, cmd):
-        assert(self.content)
-        with tempfile.TemporaryDirectory() as d:
-            f = open(d + os.sep + self.filename, mode="w")
-            f.write(self.content)
-            f.close()
-            compile_output = subprocess.run([*cmd.split(' '), self.filename], cwd=d, stderr=subprocess.STDOUT)
-            return
 
     @staticmethod
     def from_urls(conn, file_urls):
@@ -235,21 +224,6 @@ class MoodleSubmissionFile(MoodleFile):
             else:
                 obj_list.append(f)
         return obj_list
-
-    def run_shellscript_remote(self, user_name, host, target_path, args=[]):
-        '''
-        Copy the file to a remote SCP host and run it. Ignores authentication.
-        '''
-        assert(self.content)
-        with tempfile.NamedTemporaryFile(mode='w+b' if self.is_binary else 'w+') as disk_file:
-            disk_file.write(self.content)
-            disk_file.flush()
-            subprocess.run(['scp', disk_file.name, '{0}@{1}:{2}/'.format(
-                user_name, host, target_path)], stderr=subprocess.STDOUT)
-            return subprocess.run(['ssh',
-                                   '{0}@{1}'.format(user_name, host),
-                                   ' '.join([*self.SHELL, target_path + os.sep + os.path.basename(disk_file.name), *args])
-                                   ], stderr=subprocess.STDOUT)
 
     def __str__(self):
         return "{0.filename} ({0.content_type})".format(self)

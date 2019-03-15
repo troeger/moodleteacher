@@ -3,6 +3,9 @@ class JobException(Exception):
     An exception that occured while using
     the Job API.
     '''
+    def __init__(self, info_student=None, info_tutor=None):
+        self.info_student = info_student
+        self.info_tutor = info_tutor
     pass
 
 
