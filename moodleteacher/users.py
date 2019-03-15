@@ -13,9 +13,9 @@ class MoodleUser():
     def from_json(cls, raw_json):
         obj = cls()
         obj.id = raw_json['id']
-        obj.fullname = raw_json.get('fullname','')
-        obj.email = raw_json.get('email','')
-        obj.groups = raw_json.get('email',[])
+        obj.fullname = raw_json.get('fullname', '')
+        obj.email = raw_json.get('email', '')
+        obj.groups = raw_json.get('email', [])
         return obj
 
     @classmethod
@@ -59,7 +59,7 @@ class MoodleGroup():
         obj = cls()
         obj.id = raw_json['id']
         obj.course = course
-        obj.fullname = raw_json.get('name','')
+        obj.fullname = raw_json.get('name', '')
         return obj
 
     def __str__(self):
