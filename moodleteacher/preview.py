@@ -1,3 +1,9 @@
+'''
+Implementation of a graphical user interface for previewing the student submission.
+
+Demands the install of wxPython, which is only an optional dependency for the package.
+'''
+
 import html
 import io
 
