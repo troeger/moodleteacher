@@ -31,7 +31,7 @@ pypi-push: check-venv build
 	twine upload dist/*
 
 # Run test suite
-test: venv
+test:
 	python3 -m unittest
 
 
