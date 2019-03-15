@@ -1,3 +1,7 @@
+'''
+Functionality dealing with Moodle assignments.
+'''
+
 import datetime
 
 from .submissions import MoodleSubmissions

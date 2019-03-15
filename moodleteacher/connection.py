@@ -1,3 +1,7 @@
+'''
+Functionality dealing with connecting to Moodle.
+'''
+
 import os
 import pickle
 
