@@ -9,6 +9,9 @@ import shutil
 
 from .exceptions import *
 
+import logging
+logger = logging.getLogger('moodleteacher')
+
 
 class MoodleFolder():
     '''
@@ -42,7 +45,7 @@ class MoodleFolder():
 
 class MoodleFile():
     '''
-        A file stored in Moodle.
+        An in-memory file representation that was downloaded from Moodle.
     '''
     # Content types we don't know how to deal with in the preview
     UNKNOWN_CONTENT = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -112,7 +115,8 @@ class MoodleFile():
                 content_type = 'text/plain'
             else:
                 content_type = mimetypes.guess_type(fpath)[0]
-        return cls.from_local_data(name, open(fpath, 'rb').read(), content_type)
+        with open(fpath, 'rb') as fcontent:
+            return cls.from_local_data(name, fcontent.read(), content_type)
 
     def _analyze_content(self):
         '''
@@ -142,6 +146,9 @@ class MoodleFile():
         else:
             return self.content
 
+    def can_unpack(self):
+        return self.is_zip or self.is_tar
+
     def unpack(self, working_dir):
         '''
         Unpack the content of the submission to the working directory.
@@ -154,8 +161,6 @@ class MoodleFile():
             info_tutor = "Error: Execution cancelled, less then 50MB of disk space free on the executor."
             logger.error(info_tutor)
             raise JobException(info_student=info_student, info_tutor=info_tutor)
-
-        self.analyze_content()
 
         dircontent = os.listdir(working_dir)
         logger.debug("Content of %s before unarchiving: %s" %
