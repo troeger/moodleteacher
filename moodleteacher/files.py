@@ -147,7 +147,7 @@ class MoodleFile():
                 self.content_type = 'application/tar'
                 logger.debug("Detected TAR file content")
             else:
-                with NamedTemporaryFile() as tmp:
+                with NamedTemporaryFile(suffix=self.name) as tmp:
                     tmp.write(self.content)
                     tmp.flush()
                     self.content_type = mimetypes.guess_type(tmp.name)[0]
