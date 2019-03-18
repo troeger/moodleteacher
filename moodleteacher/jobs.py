@@ -33,13 +33,13 @@ class ValidationJob():
     validator_file = None                # The original validator (MoodleFile)
     working_dir = None                   # The temporary working directory with all the content
 
-    def __init__(self, submission_file, validator_file):
+    def __init__(self, submission, validator_file):
         '''
         Attributes:
-            submission_file (MoodleSubmissionFile):   The student submission.
+            submission (MoodleSubmission):            The original student submission.
             validator_file (MoodleFile):              The validator written by the student.
         '''
-        self.submission_file = submission_file
+        self.submission = submission
         self.validator_file = validator_file
 
         # Create working directory
@@ -47,7 +47,6 @@ class ValidationJob():
         if not self.working_dir.endswith(os.sep):
             self.working_dir += os.sep
         logger.debug("Created fresh working directory at {0}.".format(self.working_dir))
-        self.student_files = self.submission_file.unpack(self.working_dir)
 
     def __str__(self):
         return str(vars(self))
@@ -248,9 +247,9 @@ class ValidationJob():
 
         """
         logger.info("Running build steps ...")
-        self.run_configure(mandatory=False, timeout)
-        self.run_make(mandatory=False, timeout)
-        self.run_compiler(compiler, inputs, output, timeout)
+        self.run_configure(mandatory=False, timeout=timeout)
+        self.run_make(mandatory=False, timeout=timeout)
+        self.run_compiler(compiler, inputs, output, timeout=timeout)
 
     def spawn_program(self, name, arguments=[], timeout=30):
         """Spawns a program in the working directory.
