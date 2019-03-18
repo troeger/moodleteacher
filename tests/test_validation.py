@@ -1,7 +1,5 @@
 '''
     Test cases for the validator functionality
-
-    Note the neccessary python search path manipulation below.
 '''
 
 from unittest import TestCase
@@ -9,364 +7,86 @@ import os
 import os.path
 import logging
 
+from moodleteacher.submissions import MoodleSubmission
+from moodleteacher.jobs import ValidationJob
+from moodleteacher.files import MoodleFile
 
 logger = logging.getLogger('moodleteacher')
 
 
 class Validation(TestCase):
-    '''
-    Tests for the execution of validation scripts.
-    '''
 
-
-    def _test_validation_case(self, directory):
+    def _test_validation_case(self, directory, student_file):
         '''
         Each of the validator.py files in tests/submfiles/validation
         uses the Python assert() statement to check by itself if the result
         is the expected one for its case.
         '''
         base_dir = os.path.dirname(__file__) + '/submfiles/validation/'
-        submission = MoodleSubmission)
-        cmdline.copy_and_run(self.config, base_dir + directory)
+        case_dir = base_dir + directory
+        job = ValidationJob(MoodleSubmission(case_dir + os.sep + student_file),
+                            MoodleFile.from_local_file(case_dir + os.sep + 'validator.py'))
+        job._run_validate()
 
     def test_0100fff(self):
-        self._test_validation_case('0100fff')
+        self._test_validation_case('0100fff', 'python.pdf')
 
     def test_0100tff(self):
-        self._test_validation_case('0100tff')
+        self._test_validation_case('0100tff', 'packed.zip')
 
     def test_0100ttf(self):
-        self._test_validation_case('0100ttf')
+        self._test_validation_case('0100ttf', 'package.zip')
 
     def test_1000fff(self):
-        self._test_validation_case('1000fff')
+        self._test_validation_case('1000fff', 'helloworld.c')
 
     def test_1000fft(self):
-        self._test_validation_case('1000fft')
+        self._test_validation_case('1000fft', 'helloworld.c')
 
     def test_1000tff(self):
-        self._test_validation_case('1000tff')
+        self._test_validation_case('1000tff', 'packed.zip')
 
     def test_1000tft(self):
-        self._test_validation_case('1000tft')
+        self._test_validation_case('1000tft', 'packed.zip')
 
     def test_1000ttf(self):
-        self._test_validation_case('1000ttf')
+        self._test_validation_case('1000ttf', 'packed.zip')
 
     def test_1000ttt(self):
-        self._test_validation_case('1000ttt')
+        self._test_validation_case('1000ttt', 'packed.tgz')
 
     def test_1010tff(self):
-        self._test_validation_case('1010tff')
+        self._test_validation_case('1010tff', 'packed.zip')
 
     def test_1010ttf(self):
-        self._test_validation_case('1010ttf')
+        self._test_validation_case('1010ttf', 'packed.zip')
 
     def test_1100tff(self):
-        self._test_validation_case('1100tff')
+        self._test_validation_case('1100tff', 'packed.zip')
 
     def test_1100ttf(self):
-        self._test_validation_case('1100ttf')
+        self._test_validation_case('1100ttf', 'packed.zip')
 
     def test_3000tff(self):
-        self._test_validation_case('3000tff')
+        self._test_validation_case('3000tff', 'packed.zip')
 
     def test_3000ttf(self):
-        self._test_validation_case('3000ttf')
+        self._test_validation_case('3000ttf', 'packed.zip')
 
     def test_3010tff(self):
-        self._test_validation_case('3010tff')
+        self._test_validation_case('3010tff', 'packed.zip')
 
     def test_3010ttf(self):
-        self._test_validation_case('3010ttf')
+        self._test_validation_case('3010ttf', 'packed.zip')
 
     def test_b000tff(self):
-        self._test_validation_case('b000tff')
+        self._test_validation_case('b000tff', 'broken.zip')
 
     def test_b010tff(self):
-        self._test_validation_case('b010tff')
+        self._test_validation_case('b010tff', 'packed.zip')
 
     def test_1000tfm(self):
-        self._test_validation_case('1000tfm')
+        self._test_validation_case('1000tfm', 'packed.zip')
 
     def test_regressions(self):
-        self._test_validation_case('regression_001')
-
-
-class Communication(SubmitStudentScenarioTestCase):
-    '''
-    Tests for the communication of the executor with the OpenSubmit server.
-    '''
-
-    def setUp(self):
-        super(Communication, self).setUp()
-        self.config = config.read_config(
-            os.path.dirname(__file__) + "/executor.cfg",
-            override_url=self.live_server_url)
-
-    def _register_executor(self):
-        server.send_hostinfo(self.config)
-        return TestMachine.objects.order_by('-last_contact')[0]
-
-    def _run_executor(self):
-        return cmdline.download_and_run(self.config)
-
-    def _register_test_machine(self):
-        '''
-        Utility step for a common test case preparation:
-        - Create validatable submission
-        - Register a test machine for it
-        '''
-        sf = create_submission_file()
-        sub = create_validatable_submission(
-            self.user, self.validated_assignment, sf)
-        test_machine = self._register_executor()
-        sub.assignment.test_machines.add(test_machine)
-        return sub
-
-    def test_register_executor_explicit(self):
-        machine_count = TestMachine.objects.all().count()
-        assert(self._register_executor().pk)
-        self.assertEqual(machine_count + 1, TestMachine.objects.all().count())
-
-    @override_settings(JOB_EXECUTOR_SECRET='foo')
-    def test_invalid_secret(self):
-        self.assertNotEqual(True, self._run_executor())
-
-    def test_everything_already_tested(self):
-        create_validated_submission(self.user, self.validated_assignment)
-        assert(self._register_executor().pk)
-        self.assertEqual(False, self._run_executor())
-
-    def test_parallel_executors_test(self):
-        NUM_PARALLEL = 3
-        self.validated_assignment.test_machines.add(self._register_executor())
-        subs = []
-        for i in range(1, NUM_PARALLEL + 1):
-            stud = create_user(get_student_dict(i))
-            self.course.participants.add(stud.profile)
-            self.course.save()
-            sf = create_submission_file()
-            subs.append(create_validatable_submission(
-                stud, self.validated_assignment, sf))
-
-        # Span a number of threads, each triggering the executor
-        # This only creates a real test case if executor serialization
-        # is off (see tests/executor.cfg)
-        return_codes = utils.run_parallel(len(subs), self._run_executor)
-        self.assertEqual(
-            len(list(filter((lambda x: x is True), return_codes))),
-            len(subs))
-
-        for sub in subs:
-            results = SubmissionTestResult.objects.filter(
-                kind=SubmissionTestResult.VALIDITY_TEST
-            )
-            self.assertEqual(NUM_PARALLEL, len(results))
-            self.assertNotEqual(0, len(results[0].result))
-
-    def test_too_long_validation(self):
-        from django.core import mail
-
-        grading = create_pass_fail_grading()
-        assignment = create_validated_assignment(
-            self.course, grading, "/submfiles/validation/d000fff/", "validator_run.py")
-        assignment.attachment_test_timeout = 1
-        assignment.save()
-        sf = create_submission_file("/submfiles/validation/d000fff/helloworld.c")
-        sub = create_validatable_submission(
-            self.user, assignment, sf)
-        test_machine = self._register_executor()
-        sub.assignment.test_machines.add(test_machine)
-
-        # Fire up the executor, should mark the submission as timed out
-        self.assertEqual(True, self._run_executor())
-        # Check if timeout marking took place
-        sub.refresh_from_db()
-        self.assertEqual(sub.state, Submission.TEST_VALIDITY_FAILED)
-        text = sub.get_validation_result().result
-        self.assertIn("took too long", text)
-        # Check mail outbox for student information
-        self.assertEqual(1, len(mail.outbox))
-        for email in mail.outbox:
-            self.assertIn("Validation failed", email.subject)
-            self.assertIn("failed", email.body)
-            self.assertIn("localhost", email.body)
-
-    def test_broken_validator_feedback(self):
-        from django.core import mail
-
-        grading = create_pass_fail_grading()
-        assignment = create_validated_assignment(
-            self.course, grading, "/submfiles/validation/1000tfm/", "validator.zip")
-        assignment.save()
-        sf = create_submission_file("/submfiles/validation/1000tfm/packed.zip")
-        sub = create_validatable_submission(
-            self.user, assignment, sf)
-        test_machine = self._register_executor()
-        sub.assignment.test_machines.add(test_machine)
-
-        # Fire up the executor
-        self.assertEqual(False, self._run_executor())
-        sub.refresh_from_db()
-        self.assertEqual(sub.state, Submission.TEST_VALIDITY_FAILED)
-        text = sub.get_validation_result().result
-        self.assertIn("Internal error", text)
-        # Check mail outbox for student information
-        self.assertEqual(1, len(mail.outbox))
-        for email in mail.outbox:
-            self.assertIn("Validation failed", email.subject)
-            self.assertIn("failed", email.body)
-            self.assertIn("localhost", email.body)
-
-    def test_output_logging(self):
-        grading = create_pass_fail_grading()
-        assignment = create_validated_assignment(
-            self.course, grading, "/submfiles/validation/1000fff/", "validator.py")
-        assignment.save()
-        sf = create_submission_file("/submfiles/validation/1000fff/helloworld.c")
-        sub = create_validatable_submission(
-            self.user, assignment, sf)
-        test_machine = self._register_executor()
-        sub.assignment.test_machines.add(test_machine)
-        # Fire up the executor
-        self.assertEqual(True, self._run_executor())
-        sub.refresh_from_db()
-        self.assertEqual(sub.state, Submission.SUBMITTED_TESTED)
-        text = sub.get_validation_result().result
-        self.assertIn("quick brown fox", text)
-        self.assertIn("provide your input", text)
-
-    def test_too_long_full_test(self):
-        grading = create_pass_fail_grading()
-        assignment = create_validated_assignment(
-            self.course, 
-            grading, 
-            "/submfiles/validation/d000fff/",
-            "validator_build.py",
-            "validator_run.py")
-        assignment.attachment_test_timeout = 1
-        assignment.save()
-        sf = create_submission_file("/submfiles/validation/d000fff/helloworld.c")
-        sub = create_validatable_submission(
-            self.user, assignment, sf)
-        test_machine = self._register_executor()
-        sub.assignment.test_machines.add(test_machine)
-
-        # Fire up the executor for validation
-        self.assertEqual(True, self._run_executor())
-        # Fire up the executor for full test
-        self.assertEqual(True, self._run_executor())
-        # Check if timeout marking took place
-        sub.refresh_from_db()
-        self.assertEqual(sub.state, Submission.TEST_FULL_FAILED)
-        assert("timeout" in sub.get_fulltest_result().result_tutor)
-        # Failed full tests shall not be reported
-        self.assertEqual(0, len(mail.outbox))
-
-    def test_single_file_validator_test(self):
-        sub = self._register_test_machine()
-
-        self.assertEqual(True, self._run_executor())
-        results = SubmissionTestResult.objects.filter(
-            submission_file=sub.file_upload,
-            kind=SubmissionTestResult.VALIDITY_TEST
-        )
-        self.assertEqual(1, len(results))
-
-        self.assertEqual(True, self._run_executor())
-        results = SubmissionTestResult.objects.filter(
-            submission_file=sub.file_upload,
-            kind=SubmissionTestResult.VALIDITY_TEST
-        )
-        self.assertEqual(1, len(results))
-        self.assertNotEqual(0, len(results[0].result))
-        # Graded assignment, so no mail at this stage
-        self.assertEqual(0, len(mail.outbox))
-
-    def test_ungraded_validation_email(self):
-        from django.core import mail
-
-        sf = create_submission_file()
-        assign = create_validated_assignment_with_file(self.course, None)
-        sub = create_validatable_submission(self.user, assign, sf)
-        test_machine = self._register_executor()
-        assign.test_machines.add(test_machine)
-        # has no grading scheme, so it is not graded
-        assert(not sub.assignment.is_graded())
-
-        # Fire up the executor for validation
-        self.assertEqual(True, self._run_executor())
-
-        # Fire up the executor for full test
-        self.assertEqual(True, self._run_executor())
-
-        # Check mail outbox for student information
-        self.assertEqual(1, len(mail.outbox))
-        for email in mail.outbox:
-            self.assertIn("Validation successful", email.subject)
-            self.assertIn("passed", email.body)
-            self.assertIn("localhost", email.body)
-
-    def test_full_test(self):
-        sub = self._register_test_machine()
-        # validation test
-        self.assertEqual(True, self._run_executor())
-        # full test
-        self.assertEqual(True, self._run_executor())
-        results = SubmissionTestResult.objects.filter(
-            submission_file=sub.file_upload,
-            kind=SubmissionTestResult.FULL_TEST
-        )
-        self.assertEqual(1, len(results))
-        self.assertNotEqual(0, len(results[0].result_tutor))
-        self.assertEqual(None, results[0].result)
-
-    def test_inconsistent_state_email(self):
-        '''
-        Test operator email on inconsistent state.
-        Since executor execution and submission sending is one step,
-        we need to mock the incoming invalid executor request.
-        '''
-        sf = create_submission_file()
-        self.sub = create_validatable_submission(
-            self.user, self.validated_assignment, sf)
-        test_machine = self._register_executor()
-        self.sub.assignment.test_machines.add(test_machine)
-        self.sub.state = Submission.TEST_FULL_PENDING
-        self.sub.save()
-        post_data = {'Secret': settings.JOB_EXECUTOR_SECRET,
-                     'UUID': test_machine.host,
-                     'Action': 'test_compile',
-                     'SubmissionFileId': self.sub.file_upload.pk,
-                     'PerfData': '',
-                     'ErrorCode': 0,
-                     'Message': 'In A Bottle'}
-        self.c.post(reverse('jobs'), post_data)
-        self.assertNotEqual(len(mail.outbox), 0)
-        self.assertIn('Action reported by the executor: test_compile',
-                      mail.outbox[0].message().as_string())
-
-    def test_assignment_specific_test_machine(self):
-        # Register two test machines T1 and T2
-        real_machine = self._register_executor()
-        fake_machine = TestMachine(host="127.0.0.2")
-        fake_machine.save()
-        # Assign each of them to a different assignment
-        self.open_assignment.test_machines.add(real_machine)
-        self.validated_assignment.test_machines.add(fake_machine)
-        # Produce submission for the assignment linked to fake_machine
-        sub1 = Submission(
-            assignment=self.validated_assignment,
-            submitter=self.user,
-            state=Submission.TEST_VALIDITY_PENDING,
-            file_upload=create_submission_file()
-        )
-        sub1.save()
-        # Run real_machine executor, should not react on this submission
-        old_sub1_state = sub1.state
-        self.assertEqual(False, self._run_executor())
-        # Make sure that submission object was not touched,
-        # whatever the executor says
-        sub1 = Submission.objects.get(pk=sub1.pk)
-        self.assertEqual(old_sub1_state, sub1.state)
+        self._test_validation_case('regression_001', 'bsp.c')
