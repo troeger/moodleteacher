@@ -76,36 +76,50 @@ class MoodleFile():
     def __str__(self):
         return "{0.relative_path}{0.name}".format(self)
 
-    def download(self):
-        '''
-        Download the file content and stores in in self.content.
-        Expects self.url to be set.
+    @classmethod
+    def from_url(cls, conn, url):
+        f = cls()
+        f.conn = conn
+        f.url = url
+        response = requests.get(f.url, params={
+                                'token': f.conn.token})
+        f.encoding = response.encoding
+        try:
+            disp = response.headers['content-disposition']
+            f.name = re.findall('filename="(.+)"', disp)[0]
+        except KeyError:
+            f.name = f.url.split('/')[-1]
+        f.content_type = response.headers.get('content-type')
+        f.content = response.content
+        f._analyze_content()
+        return f
 
-        The method fills self.name, self.content_type and
-        self.encoding with the determined information.
-        If self.name is already set, it will not be changed.
-        '''
-        assert(self.conn)
-        assert(self.url)
-        response = requests.get(self.url, params={
-                                'token': self.conn.token})
-        self.encoding = response.encoding
-        if not self.name:
-            try:
-                disp = response.headers['content-disposition']
-                self.name = re.findall('filename="(.+)"', disp)[0]
-            except KeyError:
-                self.name = self.url.split('/')[-1]
-        self.content_type = response.headers.get('content-type')
-        self.content = response.content
-        self.analyze_content()
+    @classmethod
+    def from_local_data(cls, name, content, content_type):
+        f = cls()
+        f.name = name
+        f.content = content
+        f.content_type = content_type
+        f._analyze_content()
+        return f
 
-    def analyze_content(self):
+    @classmethod
+    def from_local_file(cls, fpath, content_type=None):
+        name = os.path.basename(fpath)
+        if not content_type:
+            # Special treatement of meta-files
+            if name.startswith('__MACOSX'):
+                content_type = 'text/plain'
+            else:
+                content_type = mimetypes.guess_type(fpath)[0]
+        return cls.from_local_data(name, open(fpath, 'rb').read(), content_type)
+
+    def _analyze_content(self):
         '''
         Analyzes the content of the file and sets some information bits.
-        Expects self.content to be set.
         '''
         assert(self.content)
+        assert(self.content_type)
         self.is_binary = False if isinstance(self.content, str) else True
         if self.content_type:
             self.is_pdf = True if 'application/pdf' in self.content_type else False
@@ -158,72 +172,3 @@ class MoodleFile():
             f = open(working_dir + os.sep + self.name, 'w+b' if self.is_binary else 'w+')
             f.write(self.content)
             f.close()
-
-
-class MoodleSubmissionFile(MoodleFile):
-    '''
-        A single student submission file in Moodle.
-    '''
-    def __init__(self, *args, **kwargs):
-        '''
-        Construct a new MoodleSubmissionFile object.
-
-        Variant 1: Manual construction, provide 'filename', 'content' and 'content_type'
-        Variant 2: Construction from download, provide 'conn' and 'url'
-        '''
-        if 'filename' in kwargs and 'content' in kwargs:
-            # Pseudo file
-            self.name = kwargs['filename']
-            self.content = kwargs['content']
-            if 'content_type' in kwargs:
-                self.content_type = kwargs['content_type']
-            else:
-                # Special treatement of meta-files
-                if self.name.startswith('__MACOSX'):
-                    self.content_type = 'text/plain'
-                else:
-                    self.content_type = mimetypes.guess_type(self.filename)[0]
-        elif 'conn' in kwargs or 'url' in kwargs:
-            self.conn = kwargs['conn']
-            self.url = kwargs['url']
-            self.download()
-        else:
-            raise ValueError
-
-    @staticmethod
-    def from_urls(conn, file_urls):
-        '''
-        Create a list of MoodleSubmissionFile objects from a list of URLs.
-
-        ZIP or TAR.GZ archives are also downloaded and automatically uncompressed.
-        In such a case, a single file URL may still lead to an array of MoodleSubmissionFile
-        objects being returned.
-        '''
-        obj_list = []
-        for file_url in file_urls:
-            f = MoodleSubmissionFile(conn=conn, url=file_url)
-            if f.is_zip:
-                input_zip = ZipFile(BytesIO(f.content))
-                arch_files = [
-                    info.filename for info in input_zip.infolist() if not info.is_dir()]
-                for fname in arch_files:
-                    data = input_zip.read(fname)
-                    sub_f = MoodleSubmissionFile(
-                        filename=fname, content=data)
-                    sub_f.analyze_content()
-                    obj_list.append(sub_f)
-            elif f.is_tar:
-                input_tar = tarfile.open(BytesIO(f.content))
-                arch_files = [info for info in input_tar.getmembers()]
-                for info in arch_files:
-                    data = input_tar.extractfile(info)
-                    sub_f = MoodleSubmissionFile(
-                        filename=info.name, content=data)
-                    sub_f.analyze_content()
-                    obj_list.append(sub_f)
-            else:
-                obj_list.append(f)
-        return obj_list
-
-    def __str__(self):
-        return "{0.filename} ({0.content_type})".format(self)

@@ -140,7 +140,7 @@ class MultiFileViewer(Viewer):
         self.SetSizer(vsizer)
 
         for f in moodle_files:
-            entry_list.Append(f.filename, clientData=f)
+            entry_list.Append(f.name, clientData=f)
 
         entry_list.Bind(wx.EVT_LISTBOX, self.on_event_files_select)
         entry_list.SetSelection(0)

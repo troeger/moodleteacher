@@ -1,4 +1,5 @@
 from .requests import MoodleRequest
+from .files import MoodleFile
 
 
 class MoodleSubmission():
@@ -8,7 +9,29 @@ class MoodleSubmission():
     GRADED = 'graded'
     NOT_GRADED = 'notgraded'
 
+    files = []
+    assignment = None
+    conn = None
+    raw_json = None
+    id = None
+    userid = None
+    groupid = None
+    status = None
+    gradingstatus = None
+    textfield = None
+
+    def __init__(self, fpath):
+        '''
+        Creation of a local-only fake submission object.
+        Mainly needed for the test suite.
+        '''
+        self.files = [MoodleFile.from_local_file(fpath)]
+
     def __init__(self, conn, assignment, raw_json):
+        '''
+        Creation of a submission object based on JSON data
+        from the Moodle server.
+        '''
         self.assignment = assignment
         self.conn = conn
         self.raw_json = raw_json
@@ -17,15 +40,17 @@ class MoodleSubmission():
         self.groupid = raw_json['groupid']
         self.status = raw_json['status']
         self.gradingstatus = raw_json['gradingstatus']
-        self.files = []
+        file_urls = []
         self.textfield = None
         for plugin in raw_json['plugins']:
             if plugin['type'] == 'file':
                 filelist = plugin['fileareas'][0]['files']
                 for f in filelist:
-                    self.files.append(f['fileurl'])
+                    file_urls.append(f['fileurl'])
             if plugin['type'] == 'onlinetext':
                 self.textfield = plugin['editorfields'][0]['text']
+        for file_url in file_urls:
+            self.files.append(MoodleFile.from_url(conn, file_url))
 
     def __str__(self):
         num_files = len(self.files)
