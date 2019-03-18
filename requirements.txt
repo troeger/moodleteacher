@@ -1,12 +1,16 @@
 # always needed
 requests
-# needed for preview UI
-wxPython
-PyMuPDF
+pexpect
 # needed for development
 bumpversion
 wheel
 twine
 keyring
 sphinx
+
+# needed for preview UI
+# Since wxPython installation is a project in itself,
+# we leave it out in the default virtual env installation
+# wxPython
+# PyMuPDF
 
