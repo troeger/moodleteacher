@@ -20,37 +20,44 @@ class MoodleSubmission():
     gradingstatus = None
     textfield = None
 
-    def __init__(self, fpath):
+    @classmethod
+    def from_local_file(cls, fpath):
         '''
         Creation of a local-only fake submission object.
         Mainly needed for the test suite.
         '''
-        self.files = [MoodleFile.from_local_file(fpath)]
+        s = cls()
+        s.files = [MoodleFile.from_local_file(fpath)]
+        return s
 
-    def __init__(self, conn, assignment, raw_json):
+    @classmethod
+    def from_assignment_json(cls, conn, assignment, raw_json):
         '''
         Creation of a submission object based on JSON data
-        from the Moodle server.
+        from the Moodle server that was returned together with
+        assignment information.
         '''
-        self.assignment = assignment
-        self.conn = conn
-        self.raw_json = raw_json
-        self.id = raw_json['id']
-        self.userid = raw_json['userid']
-        self.groupid = raw_json['groupid']
-        self.status = raw_json['status']
-        self.gradingstatus = raw_json['gradingstatus']
+        s = cls()
+        s.assignment = assignment
+        s.conn = conn
+        s.raw_json = raw_json
+        s.id = raw_json['id']
+        s.userid = raw_json['userid']
+        s.groupid = raw_json['groupid']
+        s.status = raw_json['status']
+        s.gradingstatus = raw_json['gradingstatus']
         file_urls = []
-        self.textfield = None
+        s.textfield = None
         for plugin in raw_json['plugins']:
             if plugin['type'] == 'file':
                 filelist = plugin['fileareas'][0]['files']
                 for f in filelist:
                     file_urls.append(f['fileurl'])
             if plugin['type'] == 'onlinetext':
-                self.textfield = plugin['editorfields'][0]['text']
+                s.textfield = plugin['editorfields'][0]['text']
         for file_url in file_urls:
-            self.files.append(MoodleFile.from_url(conn, file_url))
+            s.files.append(MoodleFile.from_url(conn, file_url))
+        return s
 
     def __str__(self):
         num_files = len(self.files)
@@ -107,7 +114,7 @@ class MoodleSubmissions(list):
         for response_assignment in response['assignments']:
             assert(response_assignment['assignmentid'] == assignment.id)
             for subm_data in response_assignment['submissions']:
-                self.append(MoodleSubmission(conn, assignment, subm_data))
+                self.append(MoodleSubmission.from_assignment_json(conn, assignment, subm_data))
 
     def __str__(self):
         return "\n".join([str(sub) for sub in self])
