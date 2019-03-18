@@ -1,11 +1,13 @@
 import mimetypes
-from zipfile import ZipFile
+import zipfile
+import tarfile
 from io import BytesIO
 import os
 import os.path
 import re
 import requests
 import shutil
+from tempfile import NamedTemporaryFile
 
 from .exceptions import *
 
@@ -98,39 +100,64 @@ class MoodleFile():
         return f
 
     @classmethod
-    def from_local_data(cls, name, content, content_type):
+    def from_local_data(cls, name, content):
         f = cls()
         f.name = name
         f.content = content
-        f.content_type = content_type
         f._analyze_content()
         return f
 
     @classmethod
-    def from_local_file(cls, fpath, content_type=None):
+    def from_local_file(cls, fpath):
         name = os.path.basename(fpath)
-        if not content_type:
-            # Special treatement of meta-files
-            if name.startswith('__MACOSX'):
-                content_type = 'text/plain'
-            else:
-                content_type = mimetypes.guess_type(fpath)[0]
         with open(fpath, 'rb') as fcontent:
-            return cls.from_local_data(name, fcontent.read(), content_type)
+            return cls.from_local_data(name, fcontent.read())
+
+    @property
+    def _is_zip_content(self):
+        try:
+            zipfile.ZipFile(BytesIO(self.content))
+            return True
+        except Exception:
+            return False
+
+    @property
+    def _is_tar_content(self):
+        try:
+            tarfile.open(BytesIO(self.content))
+            return True
+        except Exception:
+            return False
 
     def _analyze_content(self):
         '''
         Analyzes the content of the file and sets some information bits.
         '''
         assert(self.content)
-        assert(self.content_type)
+        # Check for binary file
         self.is_binary = False if isinstance(self.content, str) else True
-        if self.content_type:
-            self.is_pdf = True if 'application/pdf' in self.content_type else False
-            self.is_zip = True if 'application/zip' in self.content_type else False
-            self.is_html = True if 'text/html' in self.content_type else False
-            self.is_image = True if 'image/' in self.content_type else False
-            self.is_tar = True if self.content_type in self.TAR_CONTENT else False
+        # Determine missing content type
+        if not self.content_type:
+            if self.name.startswith('__MACOSX'):
+                self.content_type = 'text/plain'
+            elif self._is_zip_content:
+                self.content_type = 'application/zip'
+                logger.debug("Detected ZIP file content")
+            elif self._is_tar_content:
+                self.content_type = 'application/tar'
+                logger.debug("Detected TAR file content")
+            else:
+                with NamedTemporaryFile() as tmp:
+                    tmp.write(self.content)
+                    tmp.flush()
+                    self.content_type = mimetypes.guess_type(tmp.name)[0]
+                    logger.debug("Detected {0} file content".format(self.content_type))
+        # Set convinience flags
+        self.is_zip = True if 'application/zip' in self.content_type else False
+        self.is_tar = True if self.content_type in self.TAR_CONTENT else False
+        self.is_html = True if 'text/html' in self.content_type else False
+        self.is_image = True if 'image/' in self.content_type else False
+        self.is_pdf = True if 'application/pdf' in self.content_type else False
 
     def as_text(self):
         '''
@@ -146,34 +173,32 @@ class MoodleFile():
         else:
             return self.content
 
-    def can_unpack(self):
-        return self.is_zip or self.is_tar
-
-    def unpack(self, working_dir):
+    def unpack_to(self, target_dir):
         '''
         Unpack the content of the submission to the working directory.
+        If not file is not an archive, it is directly stored in target_dir
         '''
         assert(self.content)
 
-        dusage = shutil.disk_usage(working_dir)
+        dusage = shutil.disk_usage(target_dir)
         if dusage.free < 1024 * 1024 * 50:   # 50 MB
             info_student = "Internal error with the validator. Please contact your course responsible."
             info_tutor = "Error: Execution cancelled, less then 50MB of disk space free on the executor."
             logger.error(info_tutor)
             raise JobException(info_student=info_student, info_tutor=info_tutor)
 
-        dircontent = os.listdir(working_dir)
+        dircontent = os.listdir(target_dir)
         logger.debug("Content of %s before unarchiving: %s" %
-                     (working_dir, str(dircontent)))
+                     (target_dir, str(dircontent)))
 
         if self.is_zip:
-            input_zip = ZipFile(BytesIO(self.content))
-            input_zip.extractall(working_dir)
+            input_zip = zipfile.ZipFile(BytesIO(self.content))
+            input_zip.extractall(target_dir)
         elif self.is_tar:
             input_tar = tarfile.open(BytesIO(self.content))
-            input_tar.extractall(working_dir)
+            input_tar.extractall(target_dir)
         else:
             logger.debug("Assuming non-archive, copying student submission directly.")
-            f = open(working_dir + os.sep + self.name, 'w+b' if self.is_binary else 'w+')
+            f = open(target_dir + self.name, 'w+b' if self.is_binary else 'w+')
             f.write(self.content)
             f.close()

@@ -35,7 +35,7 @@ class ValidationJob():
 
     def __init__(self, submission, validator_file):
         '''
-        Creates a validation job by putting all relevant files into a temporary
+        Prepares a validation job by putting all relevant files into a temporary
         directory.
 
         Attributes:
@@ -51,10 +51,12 @@ class ValidationJob():
             self.working_dir += os.sep
         logger.debug("Created fresh working directory at {0}.".format(self.working_dir))
 
-        # Unpack validator file, if needed
-        if self.validator_file.can_unpack:
-            logger.debug("Validator is an archive, unpacking it in " + self.working_dir)
-            self.validator_file.unpack(self.working_dir)
+        # Store student files in temporary directory
+        for f in submission.files:
+            f.unpack_to(self.working_dir)
+
+        # Store validator file in temporary directory
+        self.validator_file.unpack_to(self.working_dir)
 
     def __str__(self):
         return str(vars(self))
@@ -161,8 +163,7 @@ class ValidationJob():
 
     def _send_result(self, info_student):
         # TODO: Send as Moodle comment
-        logger.info(
-            'Sending result to Moodle: ' + str(post_data))
+        logger.info('Sending result to Moodle: ')
         self.result_sent = True
 
     def send_fail_result(self, info_student, info_tutor="Test failed."):
@@ -204,7 +205,7 @@ class ValidationJob():
             else:
                 return
         try:
-            prog = RunningProgram(self, 'configure', [], self.working_dir, timeout)
+            prog = RunningProgram('configure', [], self.working_dir, timeout)
             prog.expect_exitstatus(0)
         except Exception:
             if mandatory:
@@ -224,7 +225,7 @@ class ValidationJob():
             else:
                 return
         try:
-            prog = RunningProgram(self, 'make', [], self.working_dir, timeout)
+            prog = RunningProgram('make', [], self.working_dir, timeout)
             prog.expect_exitstatus(0)
         except Exception:
             if mandatory:
@@ -245,7 +246,7 @@ class ValidationJob():
                                                        inputs=inputs,
                                                        output=output)
 
-        prog = RunningProgram(self, compiler_cmd, compiler_args, self.working_dir, timeout)
+        prog = RunningProgram(compiler_cmd, compiler_args, self.working_dir, timeout)
         prog.expect_exitstatus(0)
 
     def run_build(self, compiler=GCC, inputs=None, output=None, timeout=30):
@@ -276,7 +277,7 @@ class ValidationJob():
 
         """
         logger.debug("Spawning program for interaction ...")
-        return RunningProgram(self, name, arguments, timeout)
+        return RunningProgram(name, arguments, self.working_dir, timeout)
 
     def run_program(self, name, arguments=[], timeout=30):
         """Runs a program in the working directory to completion.
@@ -294,7 +295,7 @@ class ValidationJob():
         if exclusive:
             kill_longrunning(self.config)
 
-        prog = RunningProgram(self, name, arguments, self.working_dir, timeout)
+        prog = RunningProgram(name, arguments, self.working_dir, timeout)
         return prog.expect_end()
 
     def grep(self, regex):
