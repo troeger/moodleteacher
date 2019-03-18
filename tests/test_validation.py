@@ -24,7 +24,7 @@ class Validation(TestCase):
         '''
         base_dir = os.path.dirname(__file__) + '/submfiles/validation/'
         case_dir = base_dir + directory
-        job = ValidationJob(MoodleSubmission(case_dir + os.sep + student_file),
+        job = ValidationJob(MoodleSubmission.from_local_file(case_dir + os.sep + student_file),
                             MoodleFile.from_local_file(case_dir + os.sep + 'validator.py'))
         job._run_validate()
 
