@@ -10,6 +10,7 @@ import sys
 import importlib
 import re
 import shutil
+import tempfile
 
 from .exceptions import *
 from .compiler import GCC, compiler_cmdline
@@ -28,16 +29,18 @@ class ValidationJob():
     The method can use the functions of this class to check what the student did.
     '''
     result_sent = False
-    submission_file = None               # The original student upload (MoodleSubmissionFile)
-    submission_content = None            # The unarchived list of files of the student submission
+    submission = None
     validator_file = None                # The original validator (MoodleFile)
     working_dir = None                   # The temporary working directory with all the content
 
     def __init__(self, submission, validator_file):
         '''
+        Creates a validation job by putting all relevant files into a temporary
+        directory.
+
         Attributes:
-            submission (MoodleSubmission):            The original student submission.
-            validator_file (MoodleFile):              The validator written by the student.
+            submission (MoodleSubmission):            The student submission object.
+            validator_file (MoodleFile):              The validator file object.
         '''
         self.submission = submission
         self.validator_file = validator_file
@@ -47,6 +50,11 @@ class ValidationJob():
         if not self.working_dir.endswith(os.sep):
             self.working_dir += os.sep
         logger.debug("Created fresh working directory at {0}.".format(self.working_dir))
+
+        # Unpack validator file, if needed
+        if self.validator_file.can_unpack:
+            logger.debug("Validator is an archive, unpacking it in " + self.working_dir)
+            self.validator_file.unpack(self.working_dir)
 
     def __str__(self):
         return str(vars(self))
@@ -61,6 +69,7 @@ class ValidationJob():
         '''
         Execute the validate() method in the validator belonging to this job.
         '''
+        logger.debug("Loading validator from " + self.validator_script_name)
         assert(os.path.exists(self.validator_script_name))
         old_path = sys.path
         sys.path = [self.working_dir] + old_path
