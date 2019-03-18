@@ -1,5 +1,4 @@
-#!/usr/bin/env python3.6
-
+#!/usr/bin/env python3
 #
 # Example for a complex grading script that utilizes all features of the moodleteacher library.
 #
@@ -7,11 +6,17 @@
 # - Remember last window size on next start
 
 import argparse
+import sys
+import os
+# Allow execution of script from project root, based on the library
+# source code
+sys.path.append(os.path.realpath('.'))
 
-from moodleteacher.connection import MoodleConnection
-from moodleteacher.assignments import MoodleAssignments
-from moodleteacher.files import MoodleSubmissionFile
-from moodleteacher.preview import show_preview
+
+from moodleteacher.connection import MoodleConnection      # NOQA
+from moodleteacher.assignments import MoodleAssignments    # NOQA
+from moodleteacher.files import MoodleFile                 # NOQA
+from moodleteacher.preview import show_preview             # NOQA
 
 
 def handle_submission(submission):
@@ -27,8 +32,7 @@ def handle_submission(submission):
             print("Submission {0.id} by group {1} - {2}".format(submission, group, members))
             display_name = group.fullname
         else:
-            print("Submission looks like group work, but the group ID is not known. Skipping it...")
-            return
+            display_name = "Group {0}".format(submission.groupid)
     else:
         user = submission.assignment.course.users[submission.userid]
         print("Submission {0.id} by {1.fullname} ({1.id})".format(submission, user))
@@ -40,12 +44,12 @@ def handle_submission(submission):
             "Your options: Enter (g)rading. Show (p)review. S(k)ip this submission.\nYour choice [g]:")
         if inp == 'p':
             if submission.textfield:
-                files = [MoodleSubmissionFile(
-                    filename='(Moodle Text Box)', content=submission.textfield, content_type='text/html')]
-            else:
-                files = []
-            files += MoodleSubmissionFile.from_urls(conn, submission.files)
-            if not show_preview(display_name, files):
+                fake_file = MoodleFile.from_local_data(
+                    name='(Moodle Text Box)',
+                    content=submission.textfield,
+                    content_type='text/html')
+                submission.files.append(fake_file)
+            if not show_preview(display_name, submission.files):
                 print("Sorry, preview not possible.")
         if inp == 'k':
             return
