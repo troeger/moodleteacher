@@ -1,4 +1,4 @@
-from opensubmitexec.helpers import assert_raises, assert_dont_raises
+from moodleteacher.tests import assert_raises, assert_dont_raises
 
 
 def validate(job):

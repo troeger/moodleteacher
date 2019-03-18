@@ -1,5 +1,5 @@
-from opensubmitexec.helpers import assert_raises, assert_dont_raises
-from opensubmitexec import compiler
+from moodleteacher.tests import assert_raises, assert_dont_raises
+from moodleteacher import compiler
 
 def validate(job):
     student_files = ['lib.c','lib.h','main.c']
