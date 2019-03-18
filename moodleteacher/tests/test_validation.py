@@ -5,6 +5,7 @@
 from unittest import TestCase
 import os
 import os.path
+import sys
 import logging
 
 from moodleteacher.submissions import MoodleSubmission
@@ -12,6 +13,9 @@ from moodleteacher.jobs import ValidationJob
 from moodleteacher.files import MoodleFile
 
 logger = logging.getLogger('moodleteacher')
+logger.setLevel(logging.DEBUG)
+stream_handler = logging.StreamHandler(sys.stdout)
+logger.addHandler(stream_handler)
 
 
 class Validation(TestCase):
@@ -24,8 +28,13 @@ class Validation(TestCase):
         '''
         base_dir = os.path.dirname(__file__) + '/submfiles/validation/'
         case_dir = base_dir + directory
+        try:
+            validator = MoodleFile.from_local_file(case_dir + os.sep + 'validator.py')
+        except FileNotFoundError:
+            validator = MoodleFile.from_local_file(case_dir + os.sep + 'validator.zip')
+
         job = ValidationJob(MoodleSubmission.from_local_file(case_dir + os.sep + student_file),
-                            MoodleFile.from_local_file(case_dir + os.sep + 'validator.py'))
+                            validator)
         job._run_validate()
 
     def test_0100fff(self):
