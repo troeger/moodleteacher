@@ -20,7 +20,7 @@ setup(
         'Development Status :: 4 - Beta',
         'Programming Language :: Python :: 3'
     ],
-    install_requires=['requests'],
+    install_requires=['requests', 'pexpect'],
     extras_require={
         'ui': ['wxPython', 'PyMuPDF']
     },
