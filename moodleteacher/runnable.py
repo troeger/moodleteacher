@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger('moodleteacher')
 
 
-class RunningProgram(pexpect.spawn):
+class RunningProgram():
     """A running program that you can interact with.
 
     This class is a thin wrapper around the functionality
@@ -34,7 +34,8 @@ class RunningProgram(pexpect.spawn):
         # Open temporary file for reading, in text mode
         # This makes sure that the file pointer for writing
         # is not touched
-        return ''.join(open(self._logfile.name).readlines())
+        with open(self._logfile.name) as logfile:
+            return ''.join(logfile.readlines())
 
     def get_exitstatus(self):
         """Get the exit status of the program execution.
