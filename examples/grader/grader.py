@@ -32,6 +32,7 @@ def handle_submission(submission):
             print("Submission {0.id} by group {1} - {2}".format(submission, group, members))
             display_name = group.fullname
         else:
+            print("Submission {0.id} by unknown group with ID {0.groupid}".format(submission))
             display_name = "Group {0}".format(submission.groupid)
     else:
         user = submission.assignment.course.users[submission.userid]
