@@ -8,7 +8,7 @@ from moodleteacher.courses import MoodleCourse
 #       use the resources defined below for testing with the cached account.
 
 TEST_COURSE_ID = 5787
-TEST_FOLDER_ID = 432300       # should contain at least one file
+TEST_FOLDER_ID = 432312       # should contain at least one file
 TEST_ASSIGNMENT_ID = 14206    # should contain at least one submission
 
 
@@ -26,10 +26,7 @@ def test_course_folders():
     for folder in folders:
         if folder.id == TEST_FOLDER_ID:
             for file in folder.files:
-                print(file)
-                file.download()
-                return
-#        assert(False)
+                assert(len(file.content) > 0)
 
 
 def test_submission_list():

@@ -4,6 +4,9 @@ from .requests import MoodleRequest
 from .users import MoodleUser, MoodleGroup
 from .files import MoodleFolder
 
+import logging
+logger = logging.getLogger('moodleteacher')
+
 
 class MoodleCourse():
     '''
@@ -94,6 +97,7 @@ class MoodleCourse():
         for section in raw_json:
             for module in section['modules']:
                 if module['modname'] == 'folder':
+                    logger.debug("Found folder: {name} - ID {id}".format(**module))
                     result.append(MoodleFolder(self.conn, self, module))
         return result
 

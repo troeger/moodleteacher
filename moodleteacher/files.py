@@ -30,14 +30,17 @@ class MoodleFolder():
         self.visible = bool(raw_json['visible'])
         self.files = []
         for file_detail in raw_json['contents']:
-            f = MoodleFile()
-            f.conn = self.conn
-            f.name = file_detail['filename']
+            f = MoodleFile.from_url(self.conn, file_detail['fileurl'])
+            if not f.mimetype:
+                f.mimetype = file_detail['mimetype']
+            if not f.size:
+                f.size = file_detail['filesize']
+            if not f.relative_path:
+                f.relative_path = file_detail['filepath']
+
+            if f.name != file_detail['filename']:
+                logger.warn("File name from metadata is {0}, real file name is {1}.".format(file_detail['filename'], f.name))
             f.folder = self
-            f.size = file_detail['filesize']
-            f.url = file_detail['fileurl']
-            f.mimetype = file_detail['mimetype']
-            f.relative_path = file_detail['filepath']
             f.owner = self.course.get_user(file_detail['userid'])
             self.files.append(f)
 
