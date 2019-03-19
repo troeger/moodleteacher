@@ -173,7 +173,7 @@ class MoodleFile():
         else:
             return self.content
 
-    def unpack_to(self, target_dir):
+    def unpack_to(self, target_dir, remove_directories):
         '''
         Unpack the content of the submission to the working directory.
         If not file is not an archive, it is directly stored in target_dir
@@ -193,7 +193,17 @@ class MoodleFile():
 
         if self.is_zip:
             input_zip = zipfile.ZipFile(BytesIO(self.content))
-            input_zip.extractall(target_dir)
+            if remove_directories:
+                logger.debug("Removing directories from student submission.")
+                infolist = input_zip.infolist()
+                for file_in_zip in infolist:
+                    target_name = target_dir + os.sep + os.path.basename(file_in_zip.filename)
+                    logger.debug("Writing {0} to {1}".format(file_in_zip.filename, target_name))
+                    with open(target_name, "wb") as target:
+                        target.write(input_zip.read(f))
+            else:
+                logger.debug("Keeping directories from student submission.")
+                input_zip.extractall(target_dir)
         elif self.is_tar:
             input_tar = tarfile.open(BytesIO(self.content))
             input_tar.extractall(target_dir)
@@ -202,3 +212,7 @@ class MoodleFile():
             f = open(target_dir + self.name, 'w+b' if self.is_binary else 'w+')
             f.write(self.content)
             f.close()
+
+        dircontent = os.listdir(target_dir)
+        logger.debug("Content of %s after unarchiving: %s" %
+                     (target_dir, str(dircontent)))
