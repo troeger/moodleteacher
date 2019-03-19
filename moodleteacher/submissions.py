@@ -62,12 +62,12 @@ class MoodleSubmission():
 
     def __str__(self):
         num_files = len(self.files)
-        text = "Abgabe {0.id_} durch Nutzer {0.userid} ({0.gradingstatus}), {1} Dateien, ".format(
+        text = "Submission {0.id_} by user {0.userid}, status: {0.gradingstatus}, files: {1}, ".format(
             self, num_files)
         if self.textfield:
-            text += "mit Text"
+            text += "with notes"
         else:
-            text += "ohne Text"
+            text += "without notes"
         return(text)
 
     def is_empty(self):

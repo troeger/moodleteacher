@@ -11,13 +11,14 @@ import importlib
 import re
 import shutil
 import tempfile
+import logging
 
 from .exceptions import *
 from .compiler import GCC, compiler_cmdline
 from .runnable import RunningProgram
 
-import logging
 logger = logging.getLogger('moodleteacher')
+
 
 VALIDATOR_IMPORT_NAME = 'validator'
 
@@ -29,8 +30,6 @@ class ValidationJob():
     The method can use the functions of this class to check what the student did.
     '''
     result_sent = False
-    submission = None
-    validator_file = None                # The original validator (MoodleFile)
     working_dir = None                   # The temporary working directory with all the content
     get_files_called = False
     prepared_student_files = False
@@ -56,10 +55,11 @@ class ValidationJob():
     def validator_script_name(self):
         return self.working_dir + VALIDATOR_IMPORT_NAME + '.py'
 
-    def _run_validate(self):
+    def start(self, log_level=logging.INFO):
         '''
-        Execute the validate() method in the validator belonging to this job.
+        Execute the validate() method in the validator script belonging to this job.
         '''
+        logger.setLevel(log_level)
 
         # Create temporary directory for validation
         self.working_dir = tempfile.mkdtemp(prefix='moodleteacher_')
@@ -68,13 +68,17 @@ class ValidationJob():
         logger.debug("Created fresh working directory at {0}.".format(self.working_dir))
 
         # Store validator file in temporary directory
-        # We assume that tutors know what they do, and that they might want
-        # to drop their additional files. Given that, we keep their directory
-        # structure under all circumstances
-        self.validator_file.unpack_to(self.working_dir, remove_directories=False)
+        if self.validator_file.is_archive:
+            # We assume that a validator file with the correct name
+            # exists inside the archive
+            logger.debug("Validator is an archive, assuming {0}.py to be inside.".format(VALIDATOR_IMPORT_NAME))
+            self.validator_file.unpack_to(self.working_dir, remove_directories=False)
+        else:
+            # The file is the validator, so we can rename it to match
+            logger.debug("Moving validator content to {0}.".format(self.validator_script_name))
+            self.validator_file.save_as(self.working_dir, VALIDATOR_IMPORT_NAME + '.py')
 
         # Load validator to be called
-        logger.debug("Loading validator from " + self.validator_script_name)
         if not os.path.exists(self.validator_script_name):
             logger.error("Missing validator file at {0}.".format(self.validator_script_name))
             return
@@ -82,6 +86,7 @@ class ValidationJob():
         sys.path = [self.working_dir] + old_path
 
         try:
+            logger.debug("Loading validator.")
             module = importlib.import_module(VALIDATOR_IMPORT_NAME)
         except Exception as e:
             logger.error("Exception while loading the validator: " + str(e))
@@ -139,21 +144,18 @@ class ValidationJob():
                 text_tutor = "Missing file: {0}".format(
                     str(e))
             elif type(e) is AssertionError:
-                # Need this harsh approach to kill the
-                # test suite execution at this point
-                # Otherwise, the problem gets lost in
-                # the log storm
-                logger.error(
-                    "Failed assertion in validation script. Should not happen in production.")
-                exit(-1)
+                # This is a library bug, crash for stack trace
+                raise(e)
             else:
-                # Something really unexpected
-                text_student = "Internal problem while validating your submission. Please contact the course responsible."
-                text_tutor = "Unknown exception while running the validator: {0}".format(
-                    str(e))
+                # Something really unexpected, crash for stack trace
+                raise(e)
             # We got the text. Report the problem.
+            logger.error("Unexpected exception, message for the tutor: '{0}'".format(text_tutor))
+            logger.error("Unexpected exception, message sent to the student: '{0}'".format(text_student))
             self._send_result(text_student)
-            logger.error(text_tutor)
+            # roll back
+            sys.path = old_path
+            # keep temporary directory for debugging
             return
         # no unhandled exception during the execution of the validator
         if not self.result_sent:
@@ -168,13 +170,15 @@ class ValidationJob():
 
     def _send_result(self, info_student):
         # TODO: Send as Moodle comment
-        logger.info('Sending result to Moodle: ')
+        logger.info('Sending result to Moodle ...')
         self.result_sent = True
 
     def prepare_student_files(self, remove_directories=True):
         """Unarchive student files in temporary directory.
         """
-        assert(self.submission.files)
+        if not self.submission.files:
+            raise JobException("Your submission contains no files.", "Student submission contains no files.")
+
         assert(self.working_dir)
         for f in self.submission.files:
             f.unpack_to(self.working_dir, remove_directories)
@@ -324,8 +328,6 @@ class ValidationJob():
             raise ValidatorBrokenException("prepare_student_files() was not called before.")
 
         logger.debug("Running program ...")
-        if exclusive:
-            kill_longrunning(self.config)
 
         prog = RunningProgram(name, arguments, self.working_dir, timeout)
         return prog.expect_end()
