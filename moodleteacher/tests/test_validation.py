@@ -2,6 +2,7 @@ from moodleteacher.submissions import MoodleSubmission
 from moodleteacher.jobs import ValidationJob
 from moodleteacher.files import MoodleFile
 import os
+import logging
 
 
 def _test_validation_case(directory, student_file):
@@ -21,7 +22,7 @@ def _test_validation_case(directory, student_file):
 
     job = ValidationJob(MoodleSubmission.from_local_file(case_dir + os.sep + student_file),
                         validator)
-    job._run_validate()
+    job.start(log_level=logging.DEBUG)
 
 
 def test_0100fff():

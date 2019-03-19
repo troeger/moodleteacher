@@ -1,6 +1,6 @@
 # see https://github.com/troeger/opensubmit/issues/229
 
-from moodleteacher.tests import assert_raises
+from moodleteacher.tests import assert_raises, assert_dont_raises
 
 test_cases = [
     ["2 0 0 0 1 0", "1"],
