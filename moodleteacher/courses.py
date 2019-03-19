@@ -102,7 +102,7 @@ class MoodleCourse():
         return result
 
     def __str__(self):
-        return(self.fullname)
+        return self.fullname if self.fullname else self.shortname if self.shortname else str(self.id)
 
     def get_admin_options(self, conn):
         params = {'courseids[0]': self.id}
