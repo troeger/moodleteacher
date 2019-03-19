@@ -114,3 +114,7 @@ class MoodleCourse():
                     self.can_grade = True
                 else:
                     self.can_grade = False
+
+    def assignments(self):
+        from .assignments import MoodleAssignments
+        return MoodleAssignments(self.conn, course_filter=[self.id_, ])
