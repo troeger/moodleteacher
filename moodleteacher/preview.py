@@ -7,11 +7,15 @@ Demands the install of wxPython, which is only an optional dependency for the pa
 import html
 import io
 
-import wx
-import wx.html2
-import wx.lib.sized_controls as sc
-from wx.lib.pdfviewer import pdfViewer, pdfButtonPanel
-import wx.lib.agw.flatnotebook as fnb
+try:
+    import wx
+    import wx.html2
+    import wx.lib.sized_controls as sc
+    from wx.lib.pdfviewer import pdfViewer, pdfButtonPanel
+    import wx.lib.agw.flatnotebook as fnb
+except ImportError:
+    print("Please install the python libraries wxPython and PyMuPDF when using 'moodleteacher.preview'.")
+    exit(-1)
 
 
 class Viewer(sc.SizedFrame):
