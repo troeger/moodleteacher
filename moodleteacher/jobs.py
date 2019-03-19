@@ -69,12 +69,15 @@ class ValidationJob():
 
         # Store validator file in temporary directory
         # We assume that tutors know what they do, and that they might want
-        # to drop their additional files
+        # to drop their additional files. Given that, we keep their directory
+        # structure under all circumstances
         self.validator_file.unpack_to(self.working_dir, remove_directories=False)
 
         # Load validator to be called
         logger.debug("Loading validator from " + self.validator_script_name)
-        assert(os.path.exists(self.validator_script_name))
+        if not os.path.exists(self.validator_script_name):
+            logger.error("Missing validator file at {0}.".format(self.validator_script_name))
+            return
         old_path = sys.path
         sys.path = [self.working_dir] + old_path
 
@@ -171,6 +174,8 @@ class ValidationJob():
     def prepare_student_files(self, remove_directories=True):
         """Unarchive student files in temporary directory.
         """
+        assert(self.submission.files)
+        assert(self.working_dir)
         for f in self.submission.files:
             f.unpack_to(self.working_dir, remove_directories)
         self.prepared_student_files = True

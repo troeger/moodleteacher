@@ -58,7 +58,8 @@ class MoodleFile():
                       'application/zip'] + UNKNOWN_CONTENT
     # Different content types for a TGZ file
     TAR_CONTENT = ['application/x-gzip', 'application/gzip', 'application/tar',
-                   'application/tar+gzip', 'application/x-gtar', 'application/x-tgz']
+                   'application/tar+gzip', 'application/x-gtar', 'application/x-tgz',
+                   'application/x-tar']
 
     conn = None
     name = None                  # File name, without path information
@@ -194,21 +195,37 @@ class MoodleFile():
         if self.is_zip:
             input_zip = zipfile.ZipFile(BytesIO(self.content))
             if remove_directories:
-                logger.debug("Removing directories from student submission.")
+                logger.debug("Ignoring directories in ZIP archive.")
                 infolist = input_zip.infolist()
                 for file_in_zip in infolist:
-                    target_name = target_dir + os.sep + os.path.basename(file_in_zip.filename)
-                    logger.debug("Writing {0} to {1}".format(file_in_zip.filename, target_name))
-                    with open(target_name, "wb") as target:
-                        target.write(input_zip.read(f))
+                    if not file_in_zip.filename.endswith('/'):
+                        target_name = target_dir + os.sep + os.path.basename(file_in_zip.filename)
+                        logger.debug("Writing {0} to {1}".format(file_in_zip.filename, target_name))
+                        with open(target_name, "wb") as target:
+                            target.write(input_zip.read(file_in_zip))
+                    else:
+                        logger.debug("Ignoring ZIP entry '{0}'".format(file_in_zip.filename))
             else:
-                logger.debug("Keeping directories from student submission.")
+                logger.debug("Keeping directories from ZIP archive.")
                 input_zip.extractall(target_dir)
         elif self.is_tar:
-            input_tar = tarfile.open(BytesIO(self.content))
-            input_tar.extractall(target_dir)
+            input_tar = tarfile.open(fileobj=BytesIO(self.content))
+            if remove_directories:
+                logger.debug("Ignoring directories in TAR archive.")
+                infolist = input_tar.getmembers()
+                for file_in_tar in infolist:
+                    if file_in_tar.isfile():
+                        target_name = target_dir + os.sep + os.path.basename(file_in_tar.name)
+                        logger.debug("Writing {0} to {1}".format(file_in_tar.name, target_name))
+                        with open(target_name, "wb") as target:
+                            target.write(input_tar.extractfile(file_in_tar).read())
+                    else:
+                        logger.debug("Ignoring TAR entry '{0}'".format(file_in_tar.name))
+            else:
+                logger.debug("Keeping directories from TAR archive.")
+                input_tar.extractall(target_dir)
         else:
-            logger.debug("Assuming non-archive, copying student submission directly.")
+            logger.debug("Assuming non-archive, copying directly.")
             f = open(target_dir + self.name, 'w+b' if self.is_binary else 'w+')
             f.write(self.content)
             f.close()
