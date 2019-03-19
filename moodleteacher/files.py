@@ -89,18 +89,21 @@ class MoodleFile():
         return "{0.relative_path}{0.name}".format(self)
 
     @classmethod
-    def from_url(cls, conn, url):
+    def from_url(cls, conn, url, name=None):
         f = cls()
         f.conn = conn
         f.url = url
         response = requests.get(f.url, params={
                                 'token': f.conn.token})
         f.encoding = response.encoding
-        try:
-            disp = response.headers['content-disposition']
-            f.name = re.findall('filename="(.+)"', disp)[0]
-        except KeyError:
-            f.name = f.url.split('/')[-1]
+        if name:
+            f.name = name
+        else:
+            try:
+                disp = response.headers['content-disposition']
+                f.name = re.findall('filename="(.+)"', disp)[0]
+            except KeyError:
+                f.name = f.url.split('/')[-1]
         f.content_type = response.headers.get('content-type')
         f.content = response.content
         f._analyze_content()
