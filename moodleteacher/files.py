@@ -34,15 +34,16 @@ class MoodleFolder():
         self.files = []
         for file_detail in raw_json['contents']:
             f = MoodleFile.from_url(self.conn, file_detail['fileurl'])
-            if not f.mimetype:
-                f.mimetype = file_detail['mimetype']
+            if not f.mime_type:
+                f.mime_type = file_detail['mimetype']
             if not f.size:
                 f.size = file_detail['filesize']
             if not f.relative_path:
                 f.relative_path = file_detail['filepath']
 
             if f.name != file_detail['filename']:
-                logger.warn("File name from metadata is {0}, real file name is {1}.".format(file_detail['filename'], f.name))
+                logger.warn("File name from metadata is {0}, real file name is {1}.".format(
+                    file_detail['filename'], f.name))
             f.folder = self
             f.owner = self.course.get_user(file_detail['userid'])
             self.files.append(f)
@@ -67,61 +68,71 @@ class MoodleFile():
                    'application/tar+gzip', 'application/x-gtar', 'application/x-tgz',
                    'application/x-tar']
 
-    conn = None
-    name = None                  # File name, without path information
-    folder = None                # The MoodeFolder this file belongs to
-    size = None
-    url = None
-    mimetype = None
-    encoding = None
-    content_type = None
-    content = None
-    relative_path = ''           # The path on the server, relative to MoodleFolder
-    owner = None
-    is_binary = None
-    is_pdf = False
-    is_zip = False
-    is_html = False
-    is_image = False
-    is_tar = False
-
     def __str__(self):
         return "{0.relative_path}{0.name}".format(self)
 
+    def __init__(self, name, content, conn=None, url=None, encoding=None, content_type=None, mime_type=None, size=None, folder=None, relative_path='', owner=None):
+        self.name = name
+        self.content = content
+        self.conn = conn
+        self.url = url
+        self.encoding = encoding
+        self.mime_type = mime_type
+        self.size = size
+        self.folder = folder
+        self.relative_path = relative_path
+        self.owner = owner
+
+        # Determine missing content type
+        if not content_type:
+            if self.name.startswith('__MACOSX'):
+                self.content_type = 'text/plain'
+            elif self._is_zip_content:
+                self.content_type = 'application/zip'
+                logger.debug("Detected ZIP file content by probing")
+            elif self._is_tar_content:
+                self.content_type = 'application/tar'
+                logger.debug("Detected TAR file content by probing")
+            else:
+                with NamedTemporaryFile(suffix=self.name) as tmp:
+                    tmp.write(self.content)
+                    tmp.flush()
+                    self.content_type = mimetypes.guess_type(tmp.name)[0]
+                    logger.debug(
+                        "Detected {0} file content by mime guessing".format(self.content_type))
+        else:
+            self.content_type = content_type
+
     @classmethod
     def from_url(cls, conn, url, name=None):
-        f = cls()
-        f.conn = conn
-        f.url = url
-        response = requests.get(f.url, params={
-                                'token': f.conn.token})
-        f.encoding = response.encoding
-        if name:
-            f.name = name
-        else:
+        # fetch file from url
+        response = requests.get(url, params={
+                                'token': conn.token})
+
+        if not name:
             try:
                 disp = response.headers['content-disposition']
-                f.name = re.findall('filename="(.+)"', disp)[0]
+                name = re.findall('filename="(.+)"', disp)[0]
             except KeyError:
-                f.name = f.url.split('/')[-1]
-        f.content_type = response.headers.get('content-type')
-        f.content = response.content
-        f._analyze_content()
-        return f
+                name = url.split('/')[-1]
+
+        return cls(name=name,
+                   content=response.content,
+                   conn=conn,
+                   url=url,
+                   encoding=response.encoding,
+                   content_type=response.headers.get('content-type')
+                   )
 
     @classmethod
     def from_local_data(cls, name, content):
-        f = cls()
-        f.name = name
-        f.content = content
-        f._analyze_content()
-        return f
+        return cls(name=name, content=content)
 
     @classmethod
     def from_local_file(cls, fpath):
         name = os.path.basename(fpath)
         with open(fpath, 'rb') as fcontent:
-            return cls.from_local_data(name, fcontent.read())
+            return cls(name=name, content=fcontent.read())
 
     @property
     def _is_zip_content(self):
@@ -139,35 +150,29 @@ class MoodleFile():
         except Exception:
             return False
 
-    def _analyze_content(self):
-        '''
-        Analyzes the content of the file and sets some information bits.
-        '''
-        assert(self.content)
-        # Check for binary file
-        self.is_binary = False if isinstance(self.content, str) else True
-        # Determine missing content type
-        if not self.content_type:
-            if self.name.startswith('__MACOSX'):
-                self.content_type = 'text/plain'
-            elif self._is_zip_content:
-                self.content_type = 'application/zip'
-                logger.debug("Detected ZIP file content")
-            elif self._is_tar_content:
-                self.content_type = 'application/tar'
-                logger.debug("Detected TAR file content")
-            else:
-                with NamedTemporaryFile(suffix=self.name) as tmp:
-                    tmp.write(self.content)
-                    tmp.flush()
-                    self.content_type = mimetypes.guess_type(tmp.name)[0]
-                    logger.debug("Detected {0} file content".format(self.content_type))
-        # Set convinience flags
-        self.is_zip = True if 'application/zip' in self.content_type else False
-        self.is_tar = True if self.content_type in self.TAR_CONTENT else False
-        self.is_html = True if 'text/html' in self.content_type else False
-        self.is_image = True if 'image/' in self.content_type else False
-        self.is_pdf = True if 'application/pdf' in self.content_type else False
+    @property
+    def is_binary(self):
+        return False if isinstance(self.content, str) else True
+
+    @property
+    def is_zip(self):
+        return True if 'application/zip' in self.content_type else False
+
+    @property
+    def is_tar(self):
+        return True if self.content_type in self.TAR_CONTENT else False
+
+    @property
+    def is_html(self):
+        return True if 'text/html' in self.content_type else False
+
+    @property
+    def is_image(self):
+        return True if 'image/' in self.content_type else False
+
+    @property
+    def is_pdf(self):
+        return True if 'application/pdf' in self.content_type else False
 
     def as_text(self):
         '''
@@ -195,7 +200,8 @@ class MoodleFile():
             info_student = "Internal error with the validator. Please contact your course responsible."
             info_tutor = "Error: Execution cancelled, less then 50MB of disk space free on the executor."
             logger.error(info_tutor)
-            raise JobException(info_student=info_student, info_tutor=info_tutor)
+            raise JobException(info_student=info_student,
+                               info_tutor=info_tutor)
 
         dircontent = os.listdir(target_dir)
         logger.debug("Content of %s before unarchiving: %s" %
@@ -208,12 +214,15 @@ class MoodleFile():
                 infolist = input_zip.infolist()
                 for file_in_zip in infolist:
                     if not file_in_zip.filename.endswith('/'):
-                        target_name = target_dir + os.sep + os.path.basename(file_in_zip.filename)
-                        logger.debug("Writing {0} to {1}".format(file_in_zip.filename, target_name))
+                        target_name = target_dir + os.sep + \
+                            os.path.basename(file_in_zip.filename)
+                        logger.debug("Writing {0} to {1}".format(
+                            file_in_zip.filename, target_name))
                         with open(target_name, "wb") as target:
                             target.write(input_zip.read(file_in_zip))
                     else:
-                        logger.debug("Ignoring ZIP entry '{0}'".format(file_in_zip.filename))
+                        logger.debug("Ignoring ZIP entry '{0}'".format(
+                            file_in_zip.filename))
             else:
                 logger.debug("Keeping directories from ZIP archive.")
                 input_zip.extractall(target_dir)
@@ -224,12 +233,16 @@ class MoodleFile():
                 infolist = input_tar.getmembers()
                 for file_in_tar in infolist:
                     if file_in_tar.isfile():
-                        target_name = target_dir + os.sep + os.path.basename(file_in_tar.name)
-                        logger.debug("Writing {0} to {1}".format(file_in_tar.name, target_name))
+                        target_name = target_dir + os.sep + \
+                            os.path.basename(file_in_tar.name)
+                        logger.debug("Writing {0} to {1}".format(
+                            file_in_tar.name, target_name))
                         with open(target_name, "wb") as target:
-                            target.write(input_tar.extractfile(file_in_tar).read())
+                            target.write(input_tar.extractfile(
+                                file_in_tar).read())
                     else:
-                        logger.debug("Ignoring TAR entry '{0}'".format(file_in_tar.name))
+                        logger.debug(
+                            "Ignoring TAR entry '{0}'".format(file_in_tar.name))
             else:
                 logger.debug("Keeping directories from TAR archive.")
                 input_tar.extractall(target_dir)

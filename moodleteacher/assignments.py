@@ -13,52 +13,49 @@ class MoodleAssignment():
     '''
         A Moodle assignment.
     '''
-    duedate = None
-    cutoffdate = None
-    deadline = None
-    id_ = None
-    name = None
-    submissions = None
-    allows_feedback_comment = None
-    course = None
+    def __init__(self, course, assignment_id, course_module_id=None, duedate=None, cutoffdate=None, deadline=None, name=None, allows_feedback_comment=None):
+        self.conn = course.conn
+        self.course = course
+        self.id_ = assignment_id
+        self.cmid = course_module_id
+        self.duedate = duedate
+        self.cutoffdate = cutoffdate
+        self.deadline = deadline
+        self.name = name
+        self.allows_feedback_comment = allows_feedback_comment
 
     @classmethod
-    def from_raw_json(cls, conn, course, raw_json):
+    def from_raw_json(cls, course, raw_json):
         '''
         Create a MoodleAssignment object from raw JSON information.
         '''
-        o = cls(conn=conn, course=course, assignment_id=raw_json['id'])
-        o.duedate = datetime.datetime.fromtimestamp(raw_json['duedate'])
-        o.cutoffdate = datetime.datetime.fromtimestamp(
-            raw_json['cutoffdate'])
-        if o.duedate < o.cutoffdate:
-            o.deadline = o.cutoffdate
-        else:
-            o.deadline = o.duedate
-        o.cmid = raw_json['cmid']
-        o.name = raw_json['name']
-        o.allows_feedback_comment = False
+        duedate = datetime.datetime.fromtimestamp(raw_json['duedate'])
+        cutoffdate = datetime.datetime.fromtimestamp(raw_json['cutoffdate'])
+        allows_feedback_comment = False
         for config in raw_json['configs']:
             if config['plugin'] == 'comments' and \
                config['subtype'] == 'assignfeedback' and \
                config['name'] == 'enabled' and \
                config['value'] == '1':
-                o.allows_feedback_comment = True
-        return o
+                allows_feedback_comment = True
+
+        return cls(course=course,
+                   assignment_id=raw_json['id'],
+                   course_module_id=raw_json['cmid'],
+                   duedate=duedate,
+                   cutoffdate=cutoffdate,
+                   deadline=cutoffdate if duedate < cutoffdate else duedate,
+                   name=raw_json['name'],
+                   allows_feedback_comment=allows_feedback_comment)
 
     @classmethod
-    def from_assignment_id(cls, conn, course, assignment_id):
+    def from_assignment_id(cls, course, assignment_id):
         '''
         Create a MoodleAssignment object just from a course ID.
 
         TODO: Determine missing information pieces with an API call.
         '''
-        return cls(conn=conn, course=course, assignment_id=assignment_id)
-
-    def __init__(self, conn, course, assignment_id):
-        self.conn = conn
-        self.course = course
-        self.id_ = assignment_id
+        return cls(course=course, assignment_id=assignment_id)
 
     def __str__(self):
         if self.name:
@@ -88,6 +85,6 @@ class MoodleAssignments(list):
             course = MoodleCourse.from_raw_json(conn, course_data)
             if (course_filter and course.id_ in course_filter) or not course_filter:
                 for ass_data in course_data['assignments']:
-                    assignment = MoodleAssignment.from_raw_json(conn, course, ass_data)
+                    assignment = MoodleAssignment.from_raw_json(course, ass_data)
                     if (assignment_filter and assignment.cmid in assignment_filter) or not assignment_filter:
                         self.append(assignment)
