@@ -13,7 +13,7 @@ class MoodleSubmission():
     assignment = None
     conn = None
     raw_json = None
-    id = None
+    id_ = None
     userid = None
     groupid = None
     status = None
@@ -41,7 +41,7 @@ class MoodleSubmission():
         s.assignment = assignment
         s.conn = conn
         s.raw_json = raw_json
-        s.id = raw_json['id']
+        s.id_ = raw_json['id']
         s.userid = raw_json['userid']
         s.groupid = raw_json['groupid']
         s.status = raw_json['status']
@@ -61,7 +61,7 @@ class MoodleSubmission():
 
     def __str__(self):
         num_files = len(self.files)
-        text = "Abgabe {0.id} durch Nutzer {0.userid} ({0.gradingstatus}), {1} Dateien, ".format(
+        text = "Abgabe {0.id_} durch Nutzer {0.userid} ({0.gradingstatus}), {1} Dateien, ".format(
             self, num_files)
         if self.textfield:
             text += "mit Text"
@@ -83,10 +83,10 @@ class MoodleSubmission():
         # You can only give text feedback if your assignment is configured accordingly
         assert(feedback is "" or self.assignment.allows_feedback_comment)
         if self.is_group_submission():
-            userid = self.get_group_members()[0].id
+            userid = self.get_group_members()[0].id_
         else:
             userid = self.userid
-        params = {'assignmentid': self.assignment.id,
+        params = {'assignmentid': self.assignment.id_,
                   'userid': userid,
                   'grade': float(grade),
                   'attemptnumber': -1,
@@ -108,11 +108,11 @@ class MoodleSubmissions(list):
     '''
 
     def __init__(self, conn, assignment):
-        params = {'assignmentids[0]': assignment.id}
+        params = {'assignmentids[0]': assignment.id_}
         response = MoodleRequest(
             conn, 'mod_assign_get_submissions').post(params).json()
         for response_assignment in response['assignments']:
-            assert(response_assignment['assignmentid'] == assignment.id)
+            assert(response_assignment['assignmentid'] == assignment.id_)
             for subm_data in response_assignment['submissions']:
                 self.append(MoodleSubmission.from_assignment_json(conn, assignment, subm_data))
 

@@ -13,7 +13,7 @@ class MoodleCourse():
         A single Moodle course.
     '''
     assignments = []
-    id = None
+    id_ = None
     fullname = None
     shortname = None
     can_grade = None
@@ -43,23 +43,23 @@ class MoodleCourse():
 
     def __init__(self, conn, course_id, fullname, shortname):
         self.conn = conn
-        self.id = course_id
+        self.id_ = course_id
         self.fullname = fullname
         self.shortname = shortname
         self.get_admin_options(conn)
         # fetch list of users and groups in this course
-        params = {'courseid': self.id}
+        params = {'courseid': self.id_}
         raw_json = MoodleRequest(
             conn, 'core_enrol_get_enrolled_users').post(params).json()
         for raw_json_user in raw_json:
             moodle_user = MoodleUser.from_json(raw_json_user)
             # Django get_or_create ... in ugly.
-            self.users[moodle_user.id] = moodle_user
+            self.users[moodle_user.id_] = moodle_user
             if 'groups' in raw_json_user.keys():
                 for raw_json_group in raw_json_user['groups']:
                     moodle_group = MoodleGroup.from_json(self, raw_json_group)
-                    self.groups[moodle_group.id] = moodle_group
-                    self.group_members[moodle_group.id].add(moodle_user.id)
+                    self.groups[moodle_group.id_] = moodle_group
+                    self.group_members[moodle_group.id_].add(moodle_user.id_)
 
     def get_group(self, group_id):
         '''
@@ -91,7 +91,7 @@ class MoodleCourse():
         Returns list of MoodleFolder objects.
         '''
         result = []
-        params = {'courseid': self.id}
+        params = {'courseid': self.id_}
         raw_json = MoodleRequest(
             self.conn, 'core_course_get_contents').post(params).json()
         for section in raw_json:
@@ -102,10 +102,10 @@ class MoodleCourse():
         return result
 
     def __str__(self):
-        return self.fullname if self.fullname else self.shortname if self.shortname else str(self.id)
+        return self.fullname if self.fullname else self.shortname if self.shortname else str(self.id_)
 
     def get_admin_options(self, conn):
-        params = {'courseids[0]': self.id}
+        params = {'courseids[0]': self.id_}
         response = MoodleRequest(
             conn, 'core_course_get_user_administration_options').post(params).json()
         for option in response['courses'][0]['options']:

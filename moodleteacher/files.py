@@ -28,7 +28,7 @@ class MoodleFolder():
     def __init__(self, conn, course, raw_json):
         self.conn = conn
         self.course = course
-        self.moodle_id = int(raw_json['id'])
+        self.id_ = int(raw_json['id'])
         self.name = raw_json['name']
         self.visible = bool(raw_json['visible'])
         self.files = []

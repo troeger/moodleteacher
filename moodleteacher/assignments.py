@@ -16,7 +16,7 @@ class MoodleAssignment():
     duedate = None
     cutoffdate = None
     deadline = None
-    id = None
+    id_ = None
     name = None
     submissions = None
     allows_feedback_comment = None
@@ -40,7 +40,7 @@ class MoodleAssignment():
             self.deadline = self.cutoffdate
         else:
             self.deadline = self.duedate
-        self.id = raw_json['id']
+        self.id_ = raw_json['id']
         self.cmid = raw_json['cmid']
         self.name = raw_json['name']
         self.allows_feedback_comment = False
@@ -74,7 +74,7 @@ class MoodleAssignments(list):
             conn, 'mod_assign_get_assignments').get(**params).json()
         for course_data in response['courses']:
             course = MoodleCourse.from_raw_json(conn, course_data)
-            if (course_filter and course.id in course_filter) or not course_filter:
+            if (course_filter and course.id_ in course_filter) or not course_filter:
                 for ass_data in course_data['assignments']:
                     assignment = MoodleAssignment(conn, course, ass_data)
                     if (assignment_filter and assignment.cmid in assignment_filter) or not assignment_filter:
