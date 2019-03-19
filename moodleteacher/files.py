@@ -155,6 +155,10 @@ class MoodleFile():
         return False if isinstance(self.content, str) else True
 
     @property
+    def is_archive(self):
+        return self.is_zip or self.is_tar
+
+    @property
     def is_zip(self):
         return True if 'application/zip' in self.content_type else False
 
@@ -188,13 +192,7 @@ class MoodleFile():
         else:
             return self.content
 
-    def unpack_to(self, target_dir, remove_directories):
-        '''
-        Unpack the content of the submission to the working directory.
-        If not file is not an archive, it is directly stored in target_dir
-        '''
-        assert(self.content)
-
+    def _check_disk_space(self, target_dir):
         dusage = shutil.disk_usage(target_dir)
         if dusage.free < 1024 * 1024 * 50:   # 50 MB
             info_student = "Internal error with the validator. Please contact your course responsible."
@@ -202,6 +200,21 @@ class MoodleFile():
             logger.error(info_tutor)
             raise JobException(info_student=info_student,
                                info_tutor=info_tutor)
+
+    def save_as(self, target_dir, name):
+        self._check_disk_space(target_dir)
+
+        f = open(target_dir + name, 'w+b' if self.is_binary else 'w+')
+        f.write(self.content)
+        f.close()
+
+    def unpack_to(self, target_dir, remove_directories):
+        '''
+        Unpack the content of the submission to the working directory.
+        If not file is not an archive, it is directly stored in target_dir
+        '''
+        assert(self.content)
+        self._check_disk_space(target_dir)
 
         dircontent = os.listdir(target_dir)
         logger.debug("Content of %s before unarchiving: %s" %
@@ -248,9 +261,7 @@ class MoodleFile():
                 input_tar.extractall(target_dir)
         else:
             logger.debug("Assuming non-archive, copying directly.")
-            f = open(target_dir + self.name, 'w+b' if self.is_binary else 'w+')
-            f.write(self.content)
-            f.close()
+            self.save_as(target_dir, self.name)
 
         dircontent = os.listdir(target_dir)
         logger.debug("Content of %s after unarchiving: %s" %
