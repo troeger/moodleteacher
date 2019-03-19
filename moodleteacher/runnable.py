@@ -75,6 +75,9 @@ class RunningProgram():
             logger.debug("Spawning failed: " + str(e))
             raise NestedException(instance=self, real_exception=e, output=self.get_output())
 
+    def expect(self, pattern, timeout=-1, searchwindowsize=-1, async_=False, **kw):
+        return self._spawn.expect(pattern, timeout, searchwindowsize, async_, **kw)
+
     def expect_output(self, pattern, timeout=-1):
         """Wait until the running program performs some given output, or terminates.
 
