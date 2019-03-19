@@ -1,12 +1,14 @@
 # always needed
 requests
 pexpect
+
 # needed for development
 bumpversion
 wheel
 twine
 keyring
 sphinx
+nose
 
 # needed for preview UI
 # Since wxPython installation is a project in itself,

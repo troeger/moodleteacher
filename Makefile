@@ -32,7 +32,7 @@ pypi-push: check-venv build
 
 # Run test suite
 test:
-	python3 -m unittest
+	nosetests
 
 
 # Clean temporary files
