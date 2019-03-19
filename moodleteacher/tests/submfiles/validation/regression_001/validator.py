@@ -8,6 +8,7 @@ test_cases = [
 
 
 def validate(job):
+    assert_dont_raises(job.prepare_student_files)
     job.run_compiler(inputs=['bsp.c'], output='bsp')
     running = job.spawn_program('./bsp')
     for std_input, expected_output in test_cases:

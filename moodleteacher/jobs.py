@@ -32,6 +32,8 @@ class ValidationJob():
     submission = None
     validator_file = None                # The original validator (MoodleFile)
     working_dir = None                   # The temporary working directory with all the content
+    get_files_called = False
+    prepared_student_files = False
 
     def __init__(self, submission, validator_file):
         '''
@@ -44,19 +46,6 @@ class ValidationJob():
         '''
         self.submission = submission
         self.validator_file = validator_file
-
-        # Create working directory
-        self.working_dir = tempfile.mkdtemp(prefix='moodleteacher_')
-        if not self.working_dir.endswith(os.sep):
-            self.working_dir += os.sep
-        logger.debug("Created fresh working directory at {0}.".format(self.working_dir))
-
-        # Store student files in temporary directory
-        for f in submission.files:
-            f.unpack_to(self.working_dir)
-
-        # Store validator file in temporary directory
-        self.validator_file.unpack_to(self.working_dir)
 
     def __str__(self):
         return str(vars(self))
@@ -71,6 +60,19 @@ class ValidationJob():
         '''
         Execute the validate() method in the validator belonging to this job.
         '''
+
+        # Create temporary directory for validation
+        self.working_dir = tempfile.mkdtemp(prefix='moodleteacher_')
+        if not self.working_dir.endswith(os.sep):
+            self.working_dir += os.sep
+        logger.debug("Created fresh working directory at {0}.".format(self.working_dir))
+
+        # Store validator file in temporary directory
+        # We assume that tutors know what they do, and that they might want
+        # to drop their additional files
+        self.validator_file.unpack_to(self.working_dir, remove_directories=False)
+
+        # Load validator to be called
         logger.debug("Loading validator from " + self.validator_script_name)
         assert(os.path.exists(self.validator_script_name))
         old_path = sys.path
@@ -166,6 +168,13 @@ class ValidationJob():
         logger.info('Sending result to Moodle: ')
         self.result_sent = True
 
+    def prepare_student_files(self, remove_directories=True):
+        """Unarchive student files in temporary directory.
+        """
+        for f in self.submission.files:
+            f.unpack_to(self.working_dir, remove_directories)
+        self.prepared_student_files = True
+
     def send_fail_result(self, info_student, info_tutor="Test failed."):
         """Reports a negative result for this validation job.
 
@@ -198,6 +207,9 @@ class ValidationJob():
                               'configure' file is missing.
 
         """
+        if not self.prepared_student_files:
+            raise ValidatorBrokenException("prepare_student_files() was not called before.")
+
         if not os.path.exists(self.working_dir + os.sep + 'configure'):
             if mandatory:
                 raise FileNotFoundError(
@@ -219,6 +231,9 @@ class ValidationJob():
                               'Makefile' file is missing.
 
         """
+        if not self.prepared_student_files:
+            raise ValidatorBrokenException("prepare_student_files() was not called before.")
+
         if not os.path.exists(self.working_dir + os.sep + 'Makefile'):
             if mandatory:
                 raise FileNotFoundError("Could not find a Makefile.")
@@ -241,6 +256,9 @@ class ValidationJob():
             output (str):     The name of the output file.
 
         """
+        if not self.prepared_student_files:
+            raise ValidatorBrokenException("prepare_student_files() was not called before.")
+
         # Let exceptions travel through
         compiler_cmd, compiler_args = compiler_cmdline(compiler=compiler,
                                                        inputs=inputs,
@@ -256,6 +274,9 @@ class ValidationJob():
         The arguments are the same as for run_compiler.
 
         """
+        if not self.prepared_student_files:
+            raise ValidatorBrokenException("prepare_student_files() was not called before.")
+
         logger.info("Running build steps ...")
         self.run_configure(mandatory=False, timeout=timeout)
         self.run_make(mandatory=False, timeout=timeout)
@@ -276,6 +297,9 @@ class ValidationJob():
             RunningProgram: An object representing the running program.
 
         """
+        if not self.prepared_student_files:
+            raise ValidatorBrokenException("prepare_student_files() was not called before.")
+
         logger.debug("Spawning program for interaction ...")
         return RunningProgram(name, arguments, self.working_dir, timeout)
 
@@ -291,6 +315,9 @@ class ValidationJob():
             tuple: A tuple of the exit code, as reported by the operating system,
             and the output produced during the execution.
         """
+        if not self.prepared_student_files:
+            raise ValidatorBrokenException("prepare_student_files() was not called before.")
+
         logger.debug("Running program ...")
         if exclusive:
             kill_longrunning(self.config)
@@ -307,6 +334,9 @@ class ValidationJob():
         Returns:
             tuple:     Names of the matching files in the working directory.
         """
+        if not self.prepared_student_files:
+            raise ValidatorBrokenException("prepare_student_files() was not called before.")
+
         matches = []
         logger.debug("Searching student files for '{0}'".format(regex))
         for fname in self.student_files:
@@ -326,6 +356,9 @@ class ValidationJob():
         Returns:
             bool: Indicator if all files are found in the student archive.
         """
+        if not self.prepared_student_files:
+            raise ValidatorBrokenException("prepare_student_files() was not called before.")
+
         logger.debug("Testing {0} for the following files: {1}".format(
             self.working_dir, filenames))
         dircontent = os.listdir(self.working_dir)

@@ -3,6 +3,7 @@ from moodleteacher import compiler
 
 
 def validate(job):
+    assert_dont_raises(job.prepare_student_files)
     student_files = ['broken.c']
     assert_raises(job.run_build, inputs=student_files, output='helloworld')
     assert_raises(job.run_compiler, inputs=student_files, output='helloworld')
