@@ -352,12 +352,13 @@ class ValidationJob():
 
         matches = []
         logger.debug("Searching student files for '{0}'".format(regex))
-        for fname in self.student_files:
-            if os.path.isfile(self.working_dir + fname):
-                for line in open(self.working_dir + fname, 'br'):
+        for student_file in self.submission.files:
+            fspath = self.working_dir + student_file.name
+            if os.path.isfile(fspath):
+                for line in open(fspath, 'br'):
                     if re.search(regex.encode(), line):
-                        logger.debug("{0} contains '{1}'".format(fname, regex))
-                        matches.append(fname)
+                        logger.debug("{0} contains '{1}'".format(fspath, regex))
+                        matches.append(student_file.relative_path + student_file.name)
         return matches
 
     def ensure_files(self, filenames):
