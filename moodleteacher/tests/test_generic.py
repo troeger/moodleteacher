@@ -24,7 +24,7 @@ def test_course_folders():
     course = MoodleCourse.from_course_id(conn, TEST_COURSE_ID)
     folders = course.get_folders()
     for folder in folders:
-        if folder.id == TEST_FOLDER_ID:
+        if folder.id_ == TEST_FOLDER_ID:
             for file in folder.files:
                 assert(len(file.content) > 0)
 
@@ -32,7 +32,7 @@ def test_course_folders():
 def test_submission_list():
     assignments = MoodleAssignments(conn, course_filter=[TEST_COURSE_ID, ])
     for assignment in assignments:
-        if assignment.id == TEST_ASSIGNMENT_ID:
+        if assignment.id_ == TEST_ASSIGNMENT_ID:
             print(assignment)
             submissions = MoodleSubmissions(conn, assignment)
             print(submissions)
