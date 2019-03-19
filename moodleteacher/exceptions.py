@@ -55,3 +55,10 @@ class ValidatorBrokenException(JobException):
     Indication that the validator script is broken.
     '''
     pass
+
+
+class NoFilesException(JobException):
+    '''
+    Indication that the student submission contains no files.
+    '''
+    pass

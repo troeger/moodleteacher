@@ -116,6 +116,9 @@ class ValidationJob():
                     e.instance.name)
                 text_student += "\n\nOutput so far:\n" + e.output
                 text_tutor += "\n\nOutput so far:\n" + e.output
+            elif type(e) is NoFilesException:
+                text_student = "Your submission contains no files."
+                text_tutor = "The student submission contains no files."
             elif type(e) is NestedException:
                 text_student = "Unexpected problem during the execution of '{0}'. {1}".format(
                     e.instance.name,
@@ -150,8 +153,8 @@ class ValidationJob():
                 # Something really unexpected, crash for stack trace
                 raise(e)
             # We got the text. Report the problem.
-            logger.error("Unexpected exception, message for the tutor: '{0}'".format(text_tutor))
-            logger.error("Unexpected exception, message sent to the student: '{0}'".format(text_student))
+            logger.info("A problem occured, message for the tutor: '{0}'".format(text_tutor))
+            logger.info("A problem occured, message sent to the student: '{0}'".format(text_student))
             self._send_result(text_student)
             # roll back
             sys.path = old_path
@@ -177,7 +180,8 @@ class ValidationJob():
         """Unarchive student files in temporary directory.
         """
         if not self.submission.files:
-            raise JobException("Your submission contains no files.", "Student submission contains no files.")
+            logger.warn("prepare_student_files() not successful, submission has no files.")
+            raise NoFilesException()
 
         assert(self.working_dir)
         for f in self.submission.files:
@@ -192,7 +196,8 @@ class ValidationJob():
             info_tutor   (str): Information for the tutor(s)
 
         """
-        logger.info(info_tutor)
+        logger.info("Fail result sent for the tutor: '{0}'".format(info_tutor))
+        logger.info("Fail result sent for the student: '{0}'".format(info_student))
         self._send_result(info_student)
 
     def send_pass_result(self,
@@ -205,7 +210,8 @@ class ValidationJob():
             info_tutor   (str): Information for the tutor(s)
 
         """
-        logger.info(info_tutor)
+        logger.info("Pass result sent for the tutor: '{0}'".format(info_tutor))
+        logger.info("Pass result sent for the student: '{0}'".format(info_student))
         self._send_result(info_student)
 
     def run_configure(self, mandatory=True, timeout=30):
