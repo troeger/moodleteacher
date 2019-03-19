@@ -20,12 +20,15 @@ class MoodleFolder():
         A single folder in Moodle. On construction,
         all file information in the folder is also determined,
         but the files themselves are not downloaded.
+
+        TODO: Create constructor from ID only, fetch details with
+        separate API call.
     '''
 
     def __init__(self, conn, course, raw_json):
         self.conn = conn
         self.course = course
-        self.id = raw_json['id']
+        self.moodle_id = int(raw_json['id'])
         self.name = raw_json['name']
         self.visible = bool(raw_json['visible'])
         self.files = []
