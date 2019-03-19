@@ -25,18 +25,18 @@ def handle_submission(submission):
     '''
     print("#" * 78)
     # Submission has either textfield content or uploaed files, and was not graded so far.
-    if submission.is_group_submission:
+    if submission.is_group_submission():
         group = submission.assignment.course.get_group(submission.groupid)
         if group:
             members = [u.fullname for u in submission.get_group_members()]
-            print("Submission {0.id} by group {1} - {2}".format(submission, group, members))
+            print("Submission {0.id_} by group {1} - {2}".format(submission, group, members))
             display_name = group.fullname
         else:
-            print("Submission {0.id} by unknown group with ID {0.groupid}".format(submission))
+            print("Submission {0.id_} by unknown group with ID {0.groupid}".format(submission))
             display_name = "Group {0}".format(submission.groupid)
     else:
         user = submission.assignment.course.users[submission.userid]
-        print("Submission {0.id} by {1.fullname} ({1.id})".format(submission, user))
+        print("Submission {0.id_} by {1.fullname} ({1.id_})".format(submission, user))
         display_name = user.fullname
     # Ask user what to do
     inp = 'x'
@@ -102,7 +102,7 @@ if __name__ == '__main__':
             gradable = [sub for sub in submissions if not sub.is_empty(
             ) and sub.gradingstatus == sub.NOT_GRADED]
             if args.overview:
-                print("{1} gradable submissions: '{0.name}' ({0.id}) in '{0.course}' ({0.course.id}), {2}".format(
+                print("{1} gradable submissions: '{0.name}' ({0.id_}) in '{0.course}' ({0.course.id_}), {2}".format(
                     assignment, len(gradable), 'geschlossen' if assignment.deadline_over() else 'offen'))
             else:
                 print("Assignment '{0.name}' in '{0.course}', due to {0.deadline}:".format(
