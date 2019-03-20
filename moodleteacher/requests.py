@@ -49,15 +49,18 @@ class MoodleRequest():
                 "Error response for Moodle web service GET request ('{message}')".format(**result.json()))
         return result
 
-    def post(self, post_params):
+    def post(self, params=None):
         '''
             Perform a POST request to the Moodle web service
             with the given parameters.
         '''
-        post_data = {**self.ws_params, **post_params}
+        real_params = self.ws_params.copy()
+        if params:
+            for k, v in params.items():
+                real_params[k] = v
         logger.debug("Performing web service POST call for " +
                      self.ws_params['wsfunction'])
-        result = requests.post(self.conn.ws_url, params=post_data)
+        result = requests.post(self.conn.ws_url, params=real_params)
         logger.debug("Result: " + str(result))
         result.raise_for_status()
         data = result.json()
