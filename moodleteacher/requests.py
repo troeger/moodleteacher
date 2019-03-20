@@ -41,9 +41,10 @@ class MoodleRequest():
         logger.debug("Performing web service GET call for " +
                      repr(params))
         result = requests.get(self.conn.ws_url, params=params)
-        logger.debug("Result: " + str(result))
         result.raise_for_status()
         data = result.json()
+        # logger.debug("Result: {0}".format(data))           # massive data amount, also security sensitive
+        logger.debug("Result: {0}".format(result))
         if isinstance(data, dict) and "exception" in data:
             raise Exception(
                 "Error response for Moodle web service GET request ('{message}')".format(**result.json()))
@@ -61,9 +62,10 @@ class MoodleRequest():
         logger.debug("Performing web service POST call for " +
                      self.ws_params['wsfunction'])
         result = requests.post(self.conn.ws_url, params=real_params)
-        logger.debug("Result: " + str(result))
         result.raise_for_status()
         data = result.json()
+        # logger.debug("Result: {0}".format(data))          # massive data amount, also security sensitive
+        logger.debug("Result: {0}".format(result))
         if isinstance(data, dict):
             if "exception" in data:
                 raise Exception(

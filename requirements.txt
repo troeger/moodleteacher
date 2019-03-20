@@ -9,6 +9,7 @@ twine
 keyring
 sphinx
 nose
+responses
 
 # needed for preview UI
 # Since wxPython installation is a project in itself,

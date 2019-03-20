@@ -1,10 +1,17 @@
 from moodleteacher.submissions import MoodleSubmission
+from moodleteacher.assignments import MoodleAssignment
+from moodleteacher.courses import MoodleCourse
 from moodleteacher.jobs import ValidationJob
 from moodleteacher.files import MoodleFile
+from moodleteacher.connection import MoodleConnection
 import os
 import logging
+import responses
+import re
+import json
 
 
+@responses.activate
 def _test_validation_case(directory, student_file):
     '''
     Each of the validator.py files in tests/submfiles/validation
@@ -20,7 +27,60 @@ def _test_validation_case(directory, student_file):
         validator = MoodleFile.from_local_file(
             case_dir + os.sep + 'validator.zip')
 
-    job = ValidationJob(MoodleSubmission.from_local_file(case_dir + os.sep + student_file),
+    # Prepare faked answers for moodle WS API calls performed during validator execution
+    answer = {"courses": [{"id": 1, "options": [{"name": "update", "available": True},
+                                                {"name": "editcompletion",
+                                                    "available": False},
+                                                {"name": "filters",
+                                                    "available": True},
+                                                {"name": "reports",
+                                                    "available": True},
+                                                {"name": "backup",
+                                                    "available": True},
+                                                {"name": "restore",
+                                                    "available": True},
+                                                {"name": "files",
+                                                    "available": False},
+                                                {"name": "tags", "available": True},
+                                                {"name": "gradebook",
+                                                    "available": True},
+                                                {"name": "outcomes",
+                                                    "available": True},
+                                                {"name": "badges",
+                                                    "available": True},
+                                                {"name": "import",
+                                                    "available": True},
+                                                {"name": "publish",
+                                                    "available": False},
+                                                {"name": "reset",
+                                                    "available": True},
+                                                {"name": "roles", "available": True}]}],
+              "warnings": []}
+    responses.add(responses.POST, re.compile('(.*)core_course_get_user_administration_options(.*)'), json=answer)
+
+    answer = [{"id": 64465,
+               "username": "ptroeger",
+               "firstname": "Peter",
+               "lastname": "Tröger",
+               "fullname": "Peter Tröger",
+               "email": "peter@troeger.eu",
+               "idnumber": "8098",
+               "firstaccess": 1519124480,
+               "lastaccess": 1553091117,
+               "groups": [],
+               "roles": [],
+               "enrolledcourses": []
+               }]
+    responses.add(responses.POST, re.compile('(.*)core_enrol_get_enrolled_users(.*)'), json=answer)
+
+    responses.add(responses.POST, re.compile('(.*)mod_assign_save_grade(.*)'), json=answer)
+
+    conn = MoodleConnection("https://fakehost", "faketoken", interactive=False)
+    course = MoodleCourse(conn=conn, course_id=1,
+                          shortname='Test Course', fullname='Test Course')
+    assignment = MoodleAssignment(course=course, assignment_id=1, allows_feedback_comment=True)
+    submission = MoodleSubmission.from_local_file(assignment=assignment, fpath=case_dir + os.sep + student_file)
+    job = ValidationJob(submission,
                         validator)
     job.start(log_level=logging.DEBUG)
 

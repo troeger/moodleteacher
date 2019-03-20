@@ -28,12 +28,12 @@ class MoodleSubmission():
         self.raw_json = raw_json
 
     @classmethod
-    def from_local_file(cls, fpath):
+    def from_local_file(cls, assignment, fpath):
         '''
         Creation of a local-only fake submission object.
         Mainly needed for the test suite.
         '''
-        return cls(files=[MoodleFile.from_local_file(fpath)])
+        return cls(conn=assignment.conn, assignment=assignment, files=[MoodleFile.from_local_file(fpath)])
 
     @classmethod
     def from_assignment_json(cls, assignment, raw_json):
