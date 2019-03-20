@@ -101,7 +101,7 @@ if __name__ == '__main__':
         if (not args.gradableonly or assignment.course.can_grade):
             submissions = assignment.submissions()
             gradable = [sub for sub in submissions if not sub.is_empty(
-            ) and sub.gradingstatus == sub.NOT_GRADED]
+            ) and not sub.is_graded()]
             if args.overview:
                 print("{1} gradable submissions: '{0.name}' ({0.id_}) in '{0.course}' ({0.course.id_}), {2}".format(
                     assignment, len(gradable), 'geschlossen' if assignment.deadline_over() else 'offen'))

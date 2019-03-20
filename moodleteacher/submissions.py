@@ -1,13 +1,19 @@
 from .requests import MoodleRequest
 from .files import MoodleFile
 
+import urllib.parse
+import logging
+logger = logging.getLogger('moodleteacher')
+
+
+GRADED = 'graded'
+NOT_GRADED = 'notgraded'
+
 
 class MoodleSubmission():
     '''
         A single student submission in Moodle.
     '''
-    GRADED = 'graded'
-    NOT_GRADED = 'notgraded'
 
     def __init__(self, conn=None, submission_id=None, assignment=None, user_id=None, group_id=None, status=None, gradingstatus=None, textfield=None, files=None, raw_json=None):
         self.conn = conn
@@ -73,6 +79,9 @@ class MoodleSubmission():
     def is_empty(self):
         return len(self.files) == 0 and not self.textfield
 
+    def is_graded(self):
+        return self.gradingstatus == GRADED
+
     def is_group_submission(self):
         return self.userid == 0 and self.groupid != 0
 
@@ -80,27 +89,45 @@ class MoodleSubmission():
         assert(self.is_group_submission())
         return self.assignment.course.get_group_members(self.groupid)
 
-    def save_grade(self, grade, feedback="", applytoall=True):
+    def save_feedback(self, feedback):
+        '''
+        Saves new feedback information.
+
+        See also https://moodle.org/mod/forum/discuss.php?d=384108.
+        '''
+        logger.debug("Saving feedback information only.")
+        self.save_grade(grade=-99999, feedback=feedback)
+
+    def save_grade(self, grade, feedback=None):
+        '''
+        Saves new grading information for this student, and sets the workflow
+        state to "graded".
+        '''
         # You can only give text feedback if your assignment is configured accordingly
-        assert(feedback is "" or self.assignment.allows_feedback_comment)
+        assert(feedback is None or self.assignment.allows_feedback_comment)
+
         if self.is_group_submission():
             userid = self.get_group_members()[0].id_
         else:
             userid = self.userid
+
         params = {'assignmentid': self.assignment.id_,
                   'userid': userid,
-                  'grade': float(grade),
+                  'workflowstate': GRADED,
                   'attemptnumber': -1,
                   'addattempt': int(True),
-                  'workflowstate': self.GRADED,
+                  'grade': float(grade) if grade else '',
                   # always apply grading to team
                   # if the assignment has no group submission, this has no effect.
                   'applytoall': int(True),
-                  'plugindata[assignfeedbackcomments_editor][text]': str(feedback),
+                  'plugindata[assignfeedbackcomments_editor][text]': str(feedback) if feedback else "",
                   # //content format (1 = HTML, 0 = MOODLE, 2 = PLAIN or 4 = MARKDOWN)
                   'plugindata[assignfeedbackcomments_editor][format]': 2
                   }
-        MoodleRequest(self.conn, 'mod_assign_save_grade').post(params)
+
+        response = MoodleRequest(
+            self.conn, 'mod_assign_save_grade').post(params=params).json()
+        logger.debug("Response from grading update: {0}".format(response))
 
 
 class MoodleSubmissions(list):
@@ -121,7 +148,7 @@ class MoodleSubmissions(list):
         response = MoodleRequest(
             o.conn, 'mod_assign_get_submissions').post(params).json()
         if len(response['assignments']) == 0:
-            return None
+            return []
         for response_assignment in response['assignments']:
             assert(response_assignment['assignmentid'] == assignment.id_)
             for subm_data in response_assignment['submissions']:

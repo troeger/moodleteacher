@@ -10,7 +10,7 @@ from moodleteacher.courses import MoodleCourse
 TEST_COURSE_ID = 5787
 TEST_FOLDER_ID = 432312            # should contain at least one file
 TEST_ASSIGNMENT_CMID = 432313      # should contain at least one submission
-TEST_SUBMISSION_USER_ID = 14206    # should be gradable
+TEST_SUBMISSION_USER_ID = 64465    # should be gradable
 
 
 conn = MoodleConnection(interactive=True)
@@ -46,3 +46,10 @@ def test_grading():
     assignment = MoodleAssignment.from_course_module_id(course, TEST_ASSIGNMENT_CMID)
     submissions = MoodleSubmissions.from_assignment(assignment)
     assert(len(submissions) > 0)
+    found_one = False
+    for sub in submissions:
+        if sub.userid == TEST_SUBMISSION_USER_ID:
+            found_one = True
+            sub.save_grade(grade=5, feedback="Test feedback comment 1")
+            sub.save_feedback("Test feedback comment 2")
+    assert(found_one)
