@@ -6,7 +6,6 @@ pexpect
 bumpversion
 wheel
 twine
-keyring
 sphinx
 nose
 responses
