@@ -89,18 +89,34 @@ class MoodleSubmission():
         assert(self.is_group_submission())
         return self.assignment.course.get_group_members(self.groupid)
 
+    def load_feedback(self):
+        '''
+        Retreives the current feedback for this submission from the Moodle server.
+        '''
+        params = {'assignid': self.assignment.id_,
+                  'userid': self.userid}
+        response = MoodleRequest(
+            self.conn, 'mod_assign_get_submission_status').post(params=params).json()
+        logger.debug("Submission status: {0}".format(response))
+        plugins = response['feedback']['plugins']
+        for plugin in plugins:
+            if plugin['type'] == 'comments':
+                return plugin['editorfields'][0]['text']
+        return None
+
     def save_feedback(self, feedback):
         '''
-        Saves new feedback information.
+        Saves new feedback information on the Moodle server.
 
         See also https://moodle.org/mod/forum/discuss.php?d=384108.
         '''
         logger.debug("Saving feedback information only.")
         self.save_grade(grade=-99999, feedback=feedback)
+        return ""
 
     def save_grade(self, grade, feedback=None):
         '''
-        Saves new grading information for this student, and sets the workflow
+        Saves new grading information for this student on the Moodle server, and sets the workflow
         state to "graded".
         '''
         # You can only give text feedback if your assignment is configured accordingly

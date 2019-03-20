@@ -50,6 +50,10 @@ def test_grading():
     for sub in submissions:
         if sub.userid == TEST_SUBMISSION_USER_ID:
             found_one = True
+            # test grade saving
             sub.save_grade(grade=5, feedback="Test feedback comment 1")
+            # test feedback saving
             sub.save_feedback("Test feedback comment 2")
+            # test feedback retrival
+            assert(sub.load_feedback() == "Test feedback comment 2")
     assert(found_one)
