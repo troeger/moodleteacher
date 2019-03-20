@@ -52,26 +52,35 @@ class MoodleAssignment():
     def from_assignment_id(cls, course, assignment_id):
         '''
         Create a MoodleAssignment object just from an assignment ID.
-
-        TODO: Determine missing information pieces with an API call.
         '''
-        return cls(course=course, assignment_id=assignment_id)
+        # This approach is overkill, but
+        # there seems to be no API call to fetch single assignment
+        # detail information.
+        assignments = course.assignments()
+        for assignment in assignments:
+            if assignment.id_ == assignment_id:
+                return assignment
+        return None
 
     @classmethod
     def from_course_module_id(cls, course, course_module_id):
         '''
         Create a MoodleAssignment object just from a course module ID.
-
-        TODO: Determine missing information pieces with an API call.
         '''
         params = {}
         params['cmid'] = course_module_id
         response = MoodleRequest(
             course.conn, 'core_course_get_course_module').get(**params).json()
         if response['cm']['modname'] == 'assign':
-            return cls(course=course, assignment_id=response['cm']['instance'], course_module_id=course_module_id)
-        else:
-            return None
+            # Determine missing information.
+            # This approach is overkill, but
+            # there seems to be no API call to fetch single assignment
+            # detail information.
+            assignments = course.assignments()
+            for assignment in assignments:
+                if assignment.id_ == response['cm']['instance']:
+                    return assignment
+        return None
 
     def __str__(self):
         if self.name:
