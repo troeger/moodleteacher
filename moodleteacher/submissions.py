@@ -98,10 +98,13 @@ class MoodleSubmission():
         response = MoodleRequest(
             self.conn, 'mod_assign_get_submission_status').post(params=params).json()
         logger.debug("Submission status: {0}".format(response))
-        plugins = response['feedback']['plugins']
-        for plugin in plugins:
-            if plugin['type'] == 'comments':
-                return plugin['editorfields'][0]['text']
+        try:
+            plugins = response['feedback']['plugins']
+            for plugin in plugins:
+                if plugin['type'] == 'comments':
+                    return plugin['editorfields'][0]['text']
+        except Exception:
+            pass
         return None
 
     def save_feedback(self, feedback):
@@ -138,7 +141,7 @@ class MoodleSubmission():
                   'applytoall': int(True),
                   'plugindata[assignfeedbackcomments_editor][text]': str(feedback) if feedback else "",
                   # //content format (1 = HTML, 0 = MOODLE, 2 = PLAIN or 4 = MARKDOWN)
-                  'plugindata[assignfeedbackcomments_editor][format]': 2
+                  'plugindata[assignfeedbackcomments_editor][format]': 1
                   }
 
         response = MoodleRequest(
