@@ -1,7 +1,5 @@
 '''
 Implementation of validation jobs.
-
-Check the documentation for more details.
 '''
 
 import os.path
@@ -25,9 +23,9 @@ VALIDATOR_IMPORT_NAME = 'validator'
 
 class ValidationJob():
     '''
-    A validation job represent the act of validating a single student submission.
-    It relies on a script written by the tutor that contains a method *validate(job)*.
-    The method can use the functions of this class to check what the student did.
+    A validation job checks a single student submission, based on a validator script written by the tutor.
+
+    Check the validation section in the moodleteacher documentation for more details.
     '''
     result_sent = False
     working_dir = None                   # The temporary working directory with all the content
@@ -101,50 +99,31 @@ class ValidationJob():
         except Exception as e:
             # get more info
             text_student = None
-            text_tutor = None
             if type(e) is TerminationException:
                 text_student = "The execution of '{0}' terminated unexpectely.".format(
                     e.instance.name)
-                text_tutor = "The execution of '{0}' terminated unexpectely.".format(
-                    e.instance.name)
                 text_student += "\n\nOutput so far:\n" + e.output
-                text_tutor += "\n\nOutput so far:\n" + e.output
             elif type(e) is TimeoutException:
                 text_student = "The execution of '{0}' was cancelled, since it took too long.".format(
                     e.instance.name)
-                text_tutor = "The execution of '{0}' was cancelled due to timeout.".format(
-                    e.instance.name)
                 text_student += "\n\nOutput so far:\n" + e.output
-                text_tutor += "\n\nOutput so far:\n" + e.output
             elif type(e) is NoFilesException:
                 text_student = "Your submission contains no files."
-                text_tutor = "The student submission contains no files."
             elif type(e) is NestedException:
                 text_student = "Unexpected problem during the execution of '{0}'. {1}".format(
                     e.instance.name,
                     str(e.real_exception))
-                text_tutor = "Unkown exception during the execution of '{0}'. {1}".format(
-                    e.instance.name,
-                    str(e.real_exception))
                 text_student += "\n\nOutput so far:\n" + e.output
-                text_tutor += "\n\nOutput so far:\n" + e.output
             elif type(e) is WrongExitStatusException:
                 text_student = "The execution of '{0}' resulted in the unexpected exit status {1}.".format(
                     e.instance.name,
                     e.got)
-                text_tutor = "The execution of '{0}' resulted in the unexpected exit status {1}.".format(
-                    e.instance.name,
-                    e.got)
                 text_student += "\n\nOutput so far:\n" + e.output
-                text_tutor += "\n\nOutput so far:\n" + e.output
             elif type(e) is JobException:
                 # Some problem with our own code
                 text_student = e.info_student
-                text_tutor = e.info_tutor
             elif type(e) is FileNotFoundError:
                 text_student = "A file is missing: {0}".format(
-                    str(e))
-                text_tutor = "Missing file: {0}".format(
                     str(e))
             elif type(e) is AssertionError:
                 # This is a library bug, crash for stack trace
@@ -153,7 +132,6 @@ class ValidationJob():
                 # Something really unexpected, crash for stack trace
                 raise(e)
             # We got the text. Report the problem.
-            logger.info("A problem occured, message for the tutor: '{0}'".format(text_tutor))
             logger.info("A problem occured, message sent to the student: '{0}'".format(text_student))
             self._send_result(text_student)
             # roll back
@@ -174,6 +152,7 @@ class ValidationJob():
     def _send_result(self, info_student):
         # TODO: Send as Moodle comment
         logger.info('Sending result to Moodle ...')
+        self.submission.save_feedback(info_student)
         self.result_sent = True
 
     def prepare_student_files(self, remove_directories=True):
