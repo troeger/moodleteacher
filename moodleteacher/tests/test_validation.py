@@ -1,14 +1,13 @@
 from moodleteacher.submissions import MoodleSubmission
 from moodleteacher.assignments import MoodleAssignment
 from moodleteacher.courses import MoodleCourse
-from moodleteacher.jobs import ValidationJob
+from moodleteacher.validation import Job
 from moodleteacher.files import MoodleFile
 from moodleteacher.connection import MoodleConnection
 import os
 import logging
 import responses
 import re
-import json
 
 
 @responses.activate
@@ -80,8 +79,9 @@ def _test_validation_case(directory, student_file):
                           shortname='Test Course', fullname='Test Course')
     assignment = MoodleAssignment(course=course, assignment_id=1, allows_feedback_comment=True)
     submission = MoodleSubmission.from_local_file(assignment=assignment, fpath=case_dir + os.sep + student_file)
-    job = ValidationJob(submission,
-                        validator)
+    job = Job(submission,
+              validator,
+              "Test suite validator run: \n\n")
     job.start(log_level=logging.DEBUG)
 
 

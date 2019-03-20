@@ -21,7 +21,7 @@ logger = logging.getLogger('moodleteacher')
 VALIDATOR_IMPORT_NAME = 'validator'
 
 
-class ValidationJob():
+class Job():
     '''
     A validation job checks a single student submission, based on a validator script written by the tutor.
 
@@ -32,7 +32,7 @@ class ValidationJob():
     get_files_called = False
     prepared_student_files = False
 
-    def __init__(self, submission, validator_file):
+    def __init__(self, submission, validator_file, preamble):
         '''
         Prepares a validation job by putting all relevant files into a temporary
         directory.
@@ -40,9 +40,11 @@ class ValidationJob():
         Attributes:
             submission (MoodleSubmission):            The student submission object.
             validator_file (MoodleFile):              The validator file object.
+            preamble (str):                           The preamble text for each feedback message targeting students.
         '''
         self.submission = submission
         self.validator_file = validator_file
+        self.preamble = preamble
 
     def __str__(self):
         return str(vars(self))
@@ -152,7 +154,7 @@ class ValidationJob():
     def _send_result(self, info_student):
         # TODO: Send as Moodle comment
         logger.info('Sending result to Moodle ...')
-        self.submission.save_feedback(info_student)
+        self.submission.save_feedback(self.preamble + info_student)
         self.result_sent = True
 
     def prepare_student_files(self, remove_directories=True):
