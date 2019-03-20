@@ -120,6 +120,8 @@ class MoodleSubmissions(list):
         params = {'assignmentids[0]': assignment.id_}
         response = MoodleRequest(
             o.conn, 'mod_assign_get_submissions').post(params).json()
+        if len(response['assignments']) == 0:
+            return None
         for response_assignment in response['assignments']:
             assert(response_assignment['assignmentid'] == assignment.id_)
             for subm_data in response_assignment['submissions']:

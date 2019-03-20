@@ -1,5 +1,5 @@
 from moodleteacher.connection import MoodleConnection
-from moodleteacher.assignments import MoodleAssignments
+from moodleteacher.assignments import MoodleAssignments, MoodleAssignment
 from moodleteacher.submissions import MoodleSubmissions
 from moodleteacher.courses import MoodleCourse
 
@@ -8,8 +8,9 @@ from moodleteacher.courses import MoodleCourse
 #       use the resources defined below for testing with the cached account.
 
 TEST_COURSE_ID = 5787
-TEST_FOLDER_ID = 432312       # should contain at least one file
-TEST_ASSIGNMENT_ID = 14206    # should contain at least one submission
+TEST_FOLDER_ID = 432312            # should contain at least one file
+TEST_ASSIGNMENT_CMID = 432313      # should contain at least one submission
+TEST_SUBMISSION_USER_ID = 14206    # should be gradable
 
 
 conn = MoodleConnection(interactive=True)
@@ -31,8 +32,17 @@ def test_course_folders():
 
 def test_submission_list():
     assignments = MoodleAssignments(conn, course_filter=[TEST_COURSE_ID, ])
+    found_one = False
     for assignment in assignments:
-        if assignment.id_ == TEST_ASSIGNMENT_ID:
-            print(assignment)
-            submissions = MoodleSubmissions(conn, assignment)
-            print(submissions)
+        if assignment.cmid == TEST_ASSIGNMENT_CMID:
+            submissions = MoodleSubmissions.from_assignment(assignment)
+            assert(len(submissions) > 0)
+            found_one = True
+    assert(found_one)
+
+
+def test_grading():
+    course = MoodleCourse.from_course_id(conn, TEST_COURSE_ID)
+    assignment = MoodleAssignment.from_course_module_id(course, TEST_ASSIGNMENT_CMID)
+    submissions = MoodleSubmissions.from_assignment(assignment)
+    assert(len(submissions) > 0)
