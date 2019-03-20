@@ -16,7 +16,6 @@ sys.path.append(os.path.realpath('.'))
 from moodleteacher.connection import MoodleConnection      # NOQA
 from moodleteacher.assignments import MoodleAssignments    # NOQA
 from moodleteacher.files import MoodleFile                 # NOQA
-from moodleteacher.preview import show_preview             # NOQA
 
 
 def handle_submission(submission):
@@ -44,6 +43,8 @@ def handle_submission(submission):
         inp = input(
             "Your options: Enter (g)rading. Show (p)review. S(k)ip this submission.\nYour choice [g]:")
         if inp == 'p':
+            # Avoid mandatory loading of wxPython when using overview only
+            from moodleteacher.preview import show_preview
             if submission.textfield:
                 fake_file = MoodleFile.from_local_data(
                     name='(Moodle Text Box)',
