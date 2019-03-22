@@ -28,7 +28,7 @@ bumpversion:
 # Upload built packages to PyPI.
 # Assumes valid credentials in ~/.pypirc
 pypi-push: check-venv build
-	twine upload dist/moodleteacher-0.1.1-py3-none-any.whl
+	twine upload dist/moodleteacher-0.1.2-py3-none-any.whl
 
 # Run test suite
 test:
