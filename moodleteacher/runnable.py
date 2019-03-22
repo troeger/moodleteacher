@@ -47,10 +47,21 @@ class RunningProgram():
         logger.debug("Exit status is {0}".format(self._spawn.exitstatus))
         return self._spawn.exitstatus
 
-    def __init__(self, name, arguments=[], working_dir='.', timeout=30):
+    def __init__(self, name, arguments=[], working_dir='.', timeout=30, encoding=None):
+        """Initialize a running program.
+
+        Args:
+            name:  The file path for the executable.
+            arguments:  The command-line arguments for the executable.
+            working_dir:  The current working directory when running the program.
+            timeout:  The timeout for program execution.
+            encoding: The text encoding for the program output, e.g. 'utf-8'. If this parameter
+                    is not set, then the output is interpreted as bytes.
+        """
         self.name = name
         self.arguments = arguments
         self.working_dir = working_dir
+        self.encoding = encoding
 
         # Allow code to load its own libraries
         os.environ["LD_LIBRARY_PATH"] = working_dir
@@ -63,14 +74,15 @@ class RunningProgram():
         if name.startswith('./'):
             name = name.replace('./', working_dir)
 
-        self._logfile = tempfile.NamedTemporaryFile()
+        self._logfile = tempfile.NamedTemporaryFile(encoding=encoding, mode='w+' if encoding else 'w+b')
         logger.debug("Keeping console I/O in " + self._logfile.name)
         try:
             self._spawn = pexpect.spawn(name, arguments,
                                         logfile=self._logfile,
                                         timeout=timeout,
                                         cwd=working_dir,
-                                        echo=False)
+                                        echo=False,
+                                        encoding=encoding)
         except Exception as e:
             logger.debug("Spawning failed: " + str(e))
             raise NestedException(instance=self, real_exception=e, output=self.get_output())
@@ -106,7 +118,7 @@ class RunningProgram():
             logger.debug("Raising timeout exception.")
             raise TimeoutException(instance=self, real_exception=e, output=self.get_output())
         except Exception as e:
-            logger.debug("Expecting output failed: " + str(e))
+            logger.exception("Expecting output failed: ")
             raise NestedException(instance=self, real_exception=e, output=self.get_output())
 
     def sendline(self, text):

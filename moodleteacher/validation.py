@@ -116,6 +116,7 @@ class Job():
                     e.instance.name,
                     str(e.real_exception))
                 text_student += "\n\nOutput so far:\n" + e.output
+                logger.exception("Exception triggered by a function call inside the validator:")
             elif type(e) is WrongExitStatusException:
                 text_student = "The execution of '{0}' resulted in the unexpected exit status {1}.".format(
                     e.instance.name,
@@ -278,7 +279,7 @@ class Job():
         self.run_make(mandatory=False, timeout=timeout)
         self.run_compiler(compiler, inputs, output, timeout=timeout)
 
-    def spawn_program(self, name, arguments=[], timeout=30):
+    def spawn_program(self, name, arguments=[], timeout=30, encoding=None):
         """Spawns a program in the working directory.
 
         This method allows the interaction with the running program,
@@ -288,6 +289,9 @@ class Job():
             name (str):        The name of the program to be executed.
             arguments (tuple): Command-line arguments for the program.
             timeout (int):     The timeout for execution.
+            encoding (str):    The text encoding for the program output,
+                               e.g. 'utf-8'. If this parameter is not set,
+                               then the output is interpreted as bytes.
 
         Returns:
             RunningProgram: An object representing the running program.
@@ -297,15 +301,18 @@ class Job():
             raise ValidatorBrokenException("prepare_student_files() was not called before.")
 
         logger.debug("Spawning program for interaction ...")
-        return RunningProgram(name, arguments, self.working_dir, timeout)
+        return RunningProgram(name, arguments, self.working_dir, timeout, encoding)
 
-    def run_program(self, name, arguments=[], timeout=30):
+    def run_program(self, name, arguments=[], timeout=30, encoding=None):
         """Runs a program in the working directory to completion.
 
         Args:
             name (str):        The name of the program to be executed.
             arguments (tuple): Command-line arguments for the program.
             timeout (int):     The timeout for execution.
+            encoding (str):    The text encoding for the program output,
+                               e.g. 'utf-8'. If this parameter is not set,
+                               then the output is interpreted as bytes.
 
         Returns:
             tuple: A tuple of the exit code, as reported by the operating system,
@@ -316,7 +323,7 @@ class Job():
 
         logger.debug("Running program ...")
 
-        prog = RunningProgram(name, arguments, self.working_dir, timeout)
+        prog = RunningProgram(name, arguments, self.working_dir, timeout, encoding)
         return prog.expect_end()
 
     def grep(self, regex):

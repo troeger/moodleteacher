@@ -178,3 +178,4 @@ def test_1000tfm():
 
 def test_regressions():
     _test_validation_case('regression_001', 'bsp.c')
+    _test_validation_case('regression_002', 'möhre.java')
