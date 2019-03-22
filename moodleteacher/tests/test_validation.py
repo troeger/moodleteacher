@@ -74,7 +74,8 @@ def _test_validation_case(directory, student_file):
 
     responses.add(responses.POST, re.compile('(.*)mod_assign_save_grade(.*)'), json=answer)
 
-    conn = MoodleConnection("https://fakehost", "faketoken", interactive=False)
+    # test with simulated server responses
+    conn = MoodleConnection("https://simulated_host", "simulatedtoken", interactive=False)
     course = MoodleCourse(conn=conn, course_id=1,
                           shortname='Test Course', fullname='Test Course')
     assignment = MoodleAssignment(course=course, assignment_id=1, allows_feedback_comment=True)
@@ -82,6 +83,16 @@ def _test_validation_case(directory, student_file):
     job = Job(submission,
               validator,
               "Test suite validator run: \n\n")
+    job.start(log_level=logging.DEBUG)
+
+    # test with fake mode
+    fake_conn = MoodleConnection(is_fake=True)
+    course = MoodleCourse(conn=fake_conn, course_id=2)
+    assignment = MoodleAssignment(course=course, assignment_id=2, allows_feedback_comment=True)
+    submission = MoodleSubmission.from_local_file(assignment=assignment, fpath=case_dir + os.sep + student_file)
+    job = Job(submission,
+              validator,
+              "Test suite validator run (fake mode): \n\n")
     job.start(log_level=logging.DEBUG)
 
 

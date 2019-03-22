@@ -41,7 +41,7 @@ class MoodleCourse():
                    fullname="",
                    shortname="")
 
-    def __init__(self, conn, course_id, fullname, shortname):
+    def __init__(self, conn, course_id, fullname="", shortname=""):
         self.conn = conn
         self.id_ = course_id
         self.fullname = fullname
@@ -108,12 +108,18 @@ class MoodleCourse():
         params = {'courseids[0]': self.id_}
         response = MoodleRequest(
             conn, 'core_course_get_user_administration_options').post(params).json()
-        for option in response['courses'][0]['options']:
-            if option['name'] == 'gradebook':
-                if option['available'] is True:
-                    self.can_grade = True
-                else:
-                    self.can_grade = False
+        if 'courses' in response:
+            for option in response['courses'][0]['options']:
+                if option['name'] == 'gradebook':
+                    if option['available'] is True:
+                        self.can_grade = True
+                    else:
+                        self.can_grade = False
+        else:
+            if self.conn.is_fake:
+                self.can_grade = True
+            else:
+                self.can_grade = False
 
     def assignments(self):
         from .assignments import MoodleAssignments

@@ -15,7 +15,7 @@ class MoodleConnection():
     ws_params = {}
     moodle_host = None
 
-    def __init__(self, moodle_host=None, token=None, interactive=False):
+    def __init__(self, moodle_host=None, token=None, interactive=False, is_fake=False):
         '''
             Establishes a connection to a Moodle installation.
 
@@ -24,6 +24,9 @@ class MoodleConnection():
                 token: The client security token for the user.
                 interactive: Prompt user for parameters, if needed.
         '''
+        self.is_fake = is_fake
+        if is_fake:
+            return
         if not moodle_host and not token:
             try:
                 with open(os.path.expanduser("~/.moodleteacher"), "rb") as f:
@@ -47,4 +50,7 @@ class MoodleConnection():
         self.ws_url = moodle_host + "/webservice/rest/server.php"
 
     def __str__(self):
-        return "Connection to " + self.moodle_host
+        if self.is_fake:
+            return "Faked Moodle connection"
+        else:
+            return "Connection to " + self.moodle_host

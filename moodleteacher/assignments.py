@@ -106,10 +106,11 @@ class MoodleAssignments(list):
             params['courseids'] = course_filter
         response = MoodleRequest(
             conn, 'mod_assign_get_assignments').get(**params).json()
-        for course_data in response['courses']:
-            course = MoodleCourse.from_raw_json(conn, course_data)
-            if (course_filter and course.id_ in course_filter) or not course_filter:
-                for ass_data in course_data['assignments']:
-                    assignment = MoodleAssignment.from_raw_json(course, ass_data)
-                    if (assignment_filter and assignment.cmid in assignment_filter) or not assignment_filter:
-                        self.append(assignment)
+        if 'courses' in response:
+            for course_data in response['courses']:
+                course = MoodleCourse.from_raw_json(conn, course_data)
+                if (course_filter and course.id_ in course_filter) or not course_filter:
+                    for ass_data in course_data['assignments']:
+                        assignment = MoodleAssignment.from_raw_json(course, ass_data)
+                        if (assignment_filter and assignment.cmid in assignment_filter) or not assignment_filter:
+                            self.append(assignment)

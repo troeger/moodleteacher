@@ -1,5 +1,6 @@
 import collections
 import requests
+from unittest.mock import Mock
 
 import logging
 logger = logging.getLogger('moodleteacher')
@@ -38,6 +39,13 @@ class MoodleRequest():
         params = self.ws_params.copy()
         for key, value in get_params.items():
             self._encode_param(params, key, value)
+        if self.conn.is_fake:
+            logger.info("Fake connection, not performing web service GET call for " +
+                        repr(params))
+            the_response = Mock(spec=requests.models.Response)
+            the_response.json.return_value = {}
+            the_response.status_code = 200
+            return the_response
         logger.debug("Performing web service GET call for " +
                      repr(params))
         result = requests.get(self.conn.ws_url, params=params)
@@ -59,6 +67,13 @@ class MoodleRequest():
         if params:
             for k, v in params.items():
                 real_params[k] = v
+        if self.conn.is_fake:
+            logger.info("Fake connection, not performing web service POST call for " +
+                        self.ws_params['wsfunction'])
+            the_response = Mock(spec=requests.models.Response)
+            the_response.json.return_value = {}
+            the_response.status_code = 200
+            return the_response
         logger.debug("Performing web service POST call for " +
                      self.ws_params['wsfunction'])
         result = requests.post(self.conn.ws_url, params=real_params)
