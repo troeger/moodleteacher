@@ -123,7 +123,9 @@ class MoodleSubmission():
         state to "graded".
         '''
         # You can only give text feedback if your assignment is configured accordingly
-        assert(feedback is None or self.assignment.allows_feedback_comment)
+        if feedback is not None and not self.assignment.allows_feedback_comment:
+            logger.error("Could not save feedback, assignment does not allow feedback comments. Please check your assignment settings in Moodle.")
+            return
 
         if self.is_group_submission():
             userid = self.get_group_members()[0].id_
