@@ -104,8 +104,13 @@ class MoodleAssignment():
         params['assignid'] = self.id_
         params['userid'] = user_id
         logger.debug("Fetching submission information for user {userid} in assignment {assignid}".format(**params))
-        response = MoodleRequest(
-            self.conn, 'mod_assign_get_submission_status').get(**params).json()
+        try:
+            response = MoodleRequest(
+                self.conn, 'mod_assign_get_submission_status').get(**params).json()
+        except Exception as e:
+            logger.error("Could not fetch submission information:")
+            logger.exception(e)
+            return None
         if 'lastattempt' in response:
             if 'submission' in response['lastattempt']:
                 submission = MoodleSubmission(
@@ -127,17 +132,23 @@ class MoodleAssignment():
     def submissions(self):
         '''
         Get a list of submissions for this assignment.
-
-        Please note that the submission information gathered as part of the
-        'mod_assign_get_assignments' result does not contain the uploaded files from
-        team submissions, so it is neccssary to fetch the submission information
-        individually here.
         '''
         result = []
-        for user_id in self.course.users:
-            sub = self.get_user_submission(user_id)
-            if sub is not None:
-                result.append(sub)
+        # First, fetch the overview list of submissions for this assignment.
+        params = {'assignmentids[0]': self.id_}
+        response = MoodleRequest(
+            self.conn, 'mod_assign_get_submissions').post(params).json()
+        if 'assignments' in response:
+            for response_assignment in response['assignments']:
+                assert(response_assignment['assignmentid'] == self.id_)
+                for subm_data in response_assignment['submissions']:
+                    # On group submissions, the submission details fetch with the
+                    # first API call are incomplete.
+                    # We therefore query each identified
+                    # submission with a separate API call.
+                    sub = self.get_user_submission(subm_data['userid'])
+                    if sub is not None:
+                        result.append(sub)
         return result
 
 
