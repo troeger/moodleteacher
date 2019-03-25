@@ -35,7 +35,7 @@ class RunningProgram():
         # This makes sure that the file pointer for writing
         # is not touched
         with open(self._logfile.name) as logfile:
-            return ''.join(logfile.readlines())
+            return '<pre>' + ''.join(logfile.readlines()) + '</pre>'
 
     def get_exitstatus(self):
         """Get the exit status of the program execution.
