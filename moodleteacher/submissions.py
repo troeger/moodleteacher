@@ -58,7 +58,9 @@ class MoodleSubmission():
                     moodle_file = MoodleFile.from_url(
                         conn=self.conn,
                         url=fileinfo['fileurl'],
-                        name=fileinfo['filename'])
+                        name=fileinfo['filename'],
+                        time_modified=fileinfo['timemodified'],
+                        mime_type=fileinfo['mimetype'])
                     files.append(moodle_file)
             elif plugin['type'] == 'onlinetext':
                 textfield = plugin['editorfields'][0]['text']
@@ -86,7 +88,6 @@ class MoodleSubmission():
                   'userid': self.userid}
         response = MoodleRequest(
             self.conn, 'mod_assign_get_submission_status').post(params=params).json()
-        logger.debug("Submission status: {0}".format(response))
         try:
             plugins = response['feedback']['plugins']
             for plugin in plugins:

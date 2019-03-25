@@ -40,6 +40,8 @@ class MoodleFolder():
                 f.size = file_detail['filesize']
             if not f.relative_path:
                 f.relative_path = file_detail['filepath']
+            if not f.time_modified:
+                f.time_modified = file_detail['timemodified']
             # Testing showed that raw_json['name'] might contain broken
             # unicode characters, while file_detail['filename'] is rendered
             # correctly.
@@ -75,7 +77,7 @@ class MoodleFile():
             result += " ({0.size} Bytes)".format(self)
         return result
 
-    def __init__(self, name, content, conn=None, url=None, encoding=None, content_type=None, mime_type=None, size=None, folder=None, relative_path='', owner=None):
+    def __init__(self, name, content, conn=None, url=None, encoding=None, content_type=None, mime_type=None, size=None, folder=None, relative_path='', owner=None, time_modified=None):
         self.name = name
         self.content = content
         self.conn = conn
@@ -86,6 +88,7 @@ class MoodleFile():
         self.folder = folder
         self.relative_path = relative_path
         self.owner = owner
+        self.time_modified = time_modified
 
         # Determine missing content type
         if not content_type:
@@ -108,7 +111,7 @@ class MoodleFile():
             self.content_type = content_type
 
     @classmethod
-    def from_url(cls, conn, url, name=None):
+    def from_url(cls, conn, url, name=None, time_modified=None, mime_type=None):
         # fetch file from url
         response = requests.get(url, params={
                                 'token': conn.token})
@@ -125,6 +128,8 @@ class MoodleFile():
                    conn=conn,
                    url=url,
                    encoding=response.encoding,
+                   time_modified=time_modified,
+                   mime_type=mime_type,
                    content_type=response.headers.get('content-type')
                    )
 
