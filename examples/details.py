@@ -31,9 +31,7 @@ if __name__ == '__main__':
     course = MoodleCourse.from_course_id(conn, args.courseid)
 
     for assignment in course.assignments():
-        for userid in course.users:
-            sub = assignment.get_user_submission(userid)
-            if sub:
-                print(sub)
-                for f in sub.files:
-                    print(f)
+        for submission in assignment.submissions():
+            print(submission)
+            for f in submission.files:
+                print(f)

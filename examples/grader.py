@@ -66,8 +66,8 @@ def handle_submission(submission):
 
 
 if __name__ == '__main__':
-    # import logging
-    # logging.basicConfig(level=logging.DEBUG)
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
 
     # Prepare connection to your Moodle installation.
     # The flag makes sure that the user is asked for credentials, which are then
@@ -81,8 +81,6 @@ if __name__ == '__main__':
         "-c", "--courseid", help="Limit to this course ID (check view.php?id=...).", default=[], action='append')
     parser.add_argument("-a", "--assignmentid",
                         help="Limit to this assignment ID (check view.php?id=...).", default=[], action='append')
-    parser.add_argument("-g", "--gradableonly",
-                        help="Limit to assignments you have grading rights for.", default=False, action="store_true")
     args = parser.parse_args()
 
     # Retrieve list of assignments objects.
@@ -98,13 +96,13 @@ if __name__ == '__main__':
     # Go through assignments, sorted by deadline (oldest first).
     assignments = sorted(assignments, key=lambda x: x.deadline)
     for assignment in assignments:
-        if (not args.gradableonly or assignment.course.can_grade):
+        if assignment.course.can_grade:
             submissions = assignment.submissions()
             gradable = [sub for sub in submissions if not sub.is_empty(
             ) and not sub.is_graded()]
             if args.overview:
                 print("{1} gradable submissions: '{0.name}' ({0.id_}) in '{0.course}' ({0.course.id_}), {2}".format(
-                    assignment, len(gradable), 'geschlossen' if assignment.deadline_over() else 'offen'))
+                    assignment, len(gradable), 'closed' if assignment.deadline_over() else 'open'))
             else:
                 print("Assignment '{0.name}' in '{0.course}', due to {0.deadline}:".format(
                     assignment))
