@@ -40,10 +40,11 @@ class MoodleFolder():
                 f.size = file_detail['filesize']
             if not f.relative_path:
                 f.relative_path = file_detail['filepath']
-
+            # Testing showed that raw_json['name'] might contain broken
+            # unicode characters, while file_detail['filename'] is rendered
+            # correctly.
             if f.name != file_detail['filename']:
-                logger.warn("File name from metadata is {0}, real file name is {1}.".format(
-                    file_detail['filename'], f.name))
+                f.name = file_detail['filename']
             f.folder = self
             f.owner = self.course.get_user(file_detail['userid'])
             self.files.append(f)
