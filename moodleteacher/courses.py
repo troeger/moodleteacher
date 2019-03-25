@@ -3,6 +3,7 @@ from collections import defaultdict
 from .requests import MoodleRequest
 from .users import MoodleUser, MoodleGroup
 from .files import MoodleFolder
+from .grades import MoodleGradeItem
 
 import logging
 logger = logging.getLogger('moodleteacher')
@@ -83,6 +84,23 @@ class MoodleCourse():
 
     def get_group_members(self, group_id):
         return [self.users[user_id] for user_id in self.group_members[group_id]]
+
+    def get_user_grades(self, user_id):
+        '''
+            Fetch grade table for this user, or all users, in the given course.
+        '''
+        params = {'courseid': self.id_, 'userid': user_id}
+        response = MoodleRequest(
+            self.conn, 'gradereport_user_get_grade_items').post(params).json()
+        grade_data = response['usergrades'][0]
+        assert(grade_data['courseid'] == self.id_)
+        assert(grade_data['userid'] == user_id)
+        result = []
+        for gradeitem in grade_data['gradeitems']:
+            if 'cmid' in gradeitem:
+                # Only consider real assignments
+                result.append(MoodleGradeItem.from_raw_json(gradeitem))
+        return result
 
     def get_folders(self):
         '''
