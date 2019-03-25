@@ -70,7 +70,10 @@ class MoodleFile():
                    'application/x-tar']
 
     def __str__(self):
-        return "{0.relative_path}{0.name}".format(self)
+        result = "{0.relative_path}{0.name}".format(self)
+        if self.size:
+            result += " ({0.size} Bytes)".format(self)
+        return result
 
     def __init__(self, name, content, conn=None, url=None, encoding=None, content_type=None, mime_type=None, size=None, folder=None, relative_path='', owner=None):
         self.name = name

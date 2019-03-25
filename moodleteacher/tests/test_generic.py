@@ -1,6 +1,5 @@
 from moodleteacher.connection import MoodleConnection
 from moodleteacher.assignments import MoodleAssignments, MoodleAssignment
-from moodleteacher.submissions import MoodleSubmissions
 from moodleteacher.courses import MoodleCourse
 
 # Note: We assume that Moodleteacher was started in interactive mode
@@ -35,8 +34,7 @@ def test_submission_list():
     found_one = False
     for assignment in assignments:
         if assignment.cmid == TEST_ASSIGNMENT_CMID:
-            submissions = MoodleSubmissions.from_assignment(assignment)
-            assert(len(submissions) > 0)
+            assert(len(assignment.submissions()) > 0)
             found_one = True
     assert(found_one)
 
@@ -44,16 +42,17 @@ def test_submission_list():
 def test_grading():
     course = MoodleCourse.from_course_id(conn, TEST_COURSE_ID)
     assignment = MoodleAssignment.from_course_module_id(course, TEST_ASSIGNMENT_CMID)
-    submissions = MoodleSubmissions.from_assignment(assignment)
+    submissions = assignment.submissions()
     assert(len(submissions) > 0)
     found_one = False
     for sub in submissions:
-        if sub.userid == TEST_SUBMISSION_USER_ID:
-            found_one = True
-            # test grade saving
-            sub.save_grade(grade=5, feedback="Test feedback comment 1")
-            # test feedback saving
-            sub.save_feedback("Test feedback comment 2")
-            # test feedback retrival
-            assert(sub.load_feedback() == "Test feedback comment 2")
+        if sub:
+            if sub.userid == TEST_SUBMISSION_USER_ID:
+                found_one = True
+                # test grade saving
+                sub.save_grade(grade=5, feedback="Test feedback comment 1")
+                # test feedback saving
+                sub.save_feedback("Test feedback comment 2")
+                # test feedback retrival
+                assert(sub.load_feedback() == "Test feedback comment 2")
     assert(found_one)

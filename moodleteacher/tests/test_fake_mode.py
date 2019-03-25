@@ -1,7 +1,6 @@
 from moodleteacher.connection import MoodleConnection
 from moodleteacher.assignments import MoodleAssignments
 from moodleteacher.courses import MoodleCourse
-from moodleteacher.submissions import MoodleSubmissions
 
 
 conn = MoodleConnection(interactive=True, is_fake=True)
@@ -25,5 +24,4 @@ def test_course_folders():
 def test_submission_list():
     assignments = MoodleAssignments(conn)
     for assignment in assignments:
-        submissions = MoodleSubmissions.from_assignment(assignment)
-        assert(submissions is not None)
+        assert(assignment.submissions() is not None)

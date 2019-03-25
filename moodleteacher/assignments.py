@@ -4,15 +4,19 @@ Functionality dealing with Moodle assignments.
 
 import datetime
 
-from .submissions import MoodleSubmissions
+from .submissions import MoodleSubmission
 from .requests import MoodleRequest
 from .courses import MoodleCourse
+
+import logging
+logger = logging.getLogger('moodleteacher')
 
 
 class MoodleAssignment():
     '''
         A Moodle assignment.
     '''
+
     def __init__(self, course, assignment_id, course_module_id=None, duedate=None, cutoffdate=None, deadline=None, name=None, allows_feedback_comment=None):
         self.conn = course.conn
         self.course = course
@@ -91,8 +95,50 @@ class MoodleAssignment():
     def deadline_over(self):
         return datetime.datetime.now() > self.deadline
 
+    def get_user_submission(self, user_id):
+        '''
+        Create a new MoodleSubmission object with the submission of
+        the given user in this assignment, or None.
+        '''
+        params = {}
+        params['assignid'] = self.id_
+        params['userid'] = user_id
+        logger.debug("Fetching submission information for user {userid} in assignment {assignid}".format(**params))
+        response = MoodleRequest(
+            self.conn, 'mod_assign_get_submission_status').get(**params).json()
+        if 'lastattempt' in response:
+            if 'submission' in response['lastattempt']:
+                submission = MoodleSubmission(
+                    conn=self.conn,
+                    submission_id=response['lastattempt']['submission']['id'],
+                    assignment=self,
+                    user_id=response['lastattempt']['submission']['userid'],
+                    status=response['lastattempt']['submission']['status'])
+                if 'teamsubmission' in response['lastattempt']:
+                    logger.debug("Identified team submission.")
+                    submission.group_id = response['lastattempt']['teamsubmission']['groupid']
+                    submission.parse_plugin_json(response['lastattempt']['teamsubmission']['plugins'])
+                else:
+                    logger.debug("Identified single submission.")
+                    submission.parse_plugin_json(response['lastattempt']['submission']['plugins'])
+                return submission
+        return None
+
     def submissions(self):
-        return MoodleSubmissions.from_assignment(self)
+        '''
+        Get a list of submissions for this assignment.
+
+        Please note that the submission information gathered as part of the
+        'mod_assign_get_assignments' result does not contain the uploaded files from
+        team submissions, so it is neccssary to fetch the submission information
+        individually here.
+        '''
+        result = []
+        for user_id in self.course.users:
+            sub = self.get_user_submission(user_id)
+            if sub is not None:
+                result.append(sub)
+        return result
 
 
 class MoodleAssignments(list):
@@ -111,6 +157,7 @@ class MoodleAssignments(list):
                 course = MoodleCourse.from_raw_json(conn, course_data)
                 if (course_filter and course.id_ in course_filter) or not course_filter:
                     for ass_data in course_data['assignments']:
-                        assignment = MoodleAssignment.from_raw_json(course, ass_data)
+                        assignment = MoodleAssignment.from_raw_json(
+                            course, ass_data)
                         if (assignment_filter and assignment.cmid in assignment_filter) or not assignment_filter:
                             self.append(assignment)
