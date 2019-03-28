@@ -114,7 +114,7 @@ class MoodleFile():
     def from_url(cls, conn, url, name=None, time_modified=None, mime_type=None):
         # fetch file from url
         response = requests.get(url, params={
-                                'token': conn.token})
+                                'token': conn.token}, verify=conn.verify_ssl)
 
         if not name:
             try:

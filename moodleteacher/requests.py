@@ -48,7 +48,7 @@ class MoodleRequest():
             return the_response
         logger.debug("Performing web service GET call for " +
                      repr(params))
-        result = requests.get(self.conn.ws_url, params=params)
+        result = requests.get(self.conn.ws_url, params=params, verify=self.conn.verify_ssl)
         result.raise_for_status()
         data = result.json()
         # logger.debug("Result: {0}".format(data))           # massive data amount, also security sensitive
@@ -76,7 +76,7 @@ class MoodleRequest():
             return the_response
         logger.debug("Performing web service POST call for " +
                      self.ws_params['wsfunction'])
-        result = requests.post(self.conn.ws_url, params=real_params)
+        result = requests.post(self.conn.ws_url, params=real_params, verify=self.conn.verify_ssl)
         result.raise_for_status()
         data = result.json()
         # logger.debug("Result: {0}".format(data))          # massive data amount, also security sensitive

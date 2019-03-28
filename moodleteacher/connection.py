@@ -15,7 +15,7 @@ class MoodleConnection():
     ws_params = {}
     moodle_host = None
 
-    def __init__(self, moodle_host=None, token=None, interactive=False, is_fake=False):
+    def __init__(self, moodle_host=None, token=None, interactive=False, is_fake=False, verify_ssl=True):
         '''
             Establishes a connection to a Moodle installation.
 
@@ -25,6 +25,7 @@ class MoodleConnection():
                 interactive: Prompt user for parameters, if needed.
         '''
         self.is_fake = is_fake
+        self.verify_ssl = verify_ssl
         if is_fake:
             return
         if not moodle_host and not token:
