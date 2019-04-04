@@ -14,28 +14,7 @@ on the web page is no longer neccessary.
    :maxdepth: 1
 
    tutorial_quickstart
-
-
-Library Reference
------------------
-.. toctree::
-   :maxdepth: 1
-
-   assignments
-   compiler
-   connection
-   courses
-   exceptions
-   runnable
-   submission
-   validation
-
-
-Tutorials
----------
-.. toctree::
-   :maxdepth: 1
-
+   reference
    tutorial_validation
 
 
