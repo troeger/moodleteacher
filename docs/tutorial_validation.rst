@@ -1,7 +1,7 @@
 Validation tutorial
 ###################
 
-MoodleTeacher supports the automated validation of student submissions through a custom Python3 script, called a *validator*, which is written by the teacher.
+MoodleTeacher supports the automated validation of student submissions through a custom Python3 script, called a **validator**, which is written by the teacher.
 
 A validator can come in two flavours:
 
@@ -16,16 +16,17 @@ The validation functionality of MoodleTeacher performs the following activities 
 - Download (and unpacking) of the student submission in this directory.
 - Download (and unpacking) of the validator in this directory.
 - Execution of the validator.
+- Reporting of results to Moodle, explicitely from the validator or implicitly.
 - Cleanup of the temporary directory.
 
-A validator script can use special functionality from the :class:`Job` class, which includes:
+A validator script can use special functionality from the :class:`moodleteacher.validation.Job` class, which includes:
 
 - Test for mandatory files in the student package.
 - Compilation of student code.
 - Execution of student code, including input simulation and output parsing.
 - Reporting of validation results as teacher feedback in Moodle.
 
-Examples for test scripts can be found `online <https://github.com/troeger/moodleteacher/tree/master/examples>`_.
+Examples for validators can be found `online <https://github.com/troeger/moodleteacher/tree/master/examples>`_.
 
 Our companion project `MoodleRunner <https://github.com/troeger/moodleteacher>`_ wraps the validation functionality in a Docker image that is directly usable with your existing Moodle installation.
 
@@ -50,12 +51,12 @@ The ``validator.py`` file must contain a function ``validate(job)`` that is call
 - Line 5: A positive validation result is sent back to Moodle with :meth:`~moodleteacher.validation.Job.send_pass_result`. 
 - Line 6: A negative validation result is sent back to Moodle with :meth:`~moodleteacher.validation.Job.send_fail_result`.
 
-Test scripts are ordinary Python code, so beside the functionalities provided by the job object, you can use any Python functionality. The example shows that in Line 4. 
+Validators are ordinary Python code, so beside the functionalities provided by the job object, you can use any Python functionality. The example shows that in Line 4. 
 
 If any part of the code leads to an exception that is not catched inside ``validate(job)``, than this is automatically interpreted as negative validation result. The MoodleTeacher code forwards the exception as generic information to the student. If you want to customize the error reporting, catch all potential exceptions and use your own call of :meth:`~moodleteacher.validation.Job.send_fail_result` instead.
 
-Test script examples
-====================
+Validator examples
+==================
 
 The following example shows a validator for a program in C that prints the sum of two integer values. The values are given as command line arguments. If the wrong number of arguments is given, the student code is expected to print `"Wrong number of arguments!"`. The student only has to submit the C file.
 

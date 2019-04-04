@@ -26,6 +26,7 @@ version = ''
 # The full version, including alpha/beta/rc tags
 release = '0.1.18'
 
+rst_epilog = '.. |release| replace:: %s' % release
 
 # -- General configuration ---------------------------------------------------
 

@@ -12,9 +12,9 @@ SUBMITTED = 'submitted'
 
 
 class MoodleSubmission():
-    '''
+    """
         A single student submission in Moodle.
-    '''
+    """
 
     def __init__(self, conn=None, submission_id=None, assignment=None, user_id=None, group_id=None, status=None, gradingstatus=None, textfield=None, files=[]):
         self.conn = conn
@@ -29,10 +29,10 @@ class MoodleSubmission():
 
     @classmethod
     def from_local_file(cls, assignment, fpath):
-        '''
+        """
         Creation of a local-only fake submission object.
         Mainly needed for the test suite.
-        '''
+        """
         return cls(conn=assignment.conn, assignment=assignment, files=[MoodleFile.from_local_file(fpath)])
 
     def __str__(self):
@@ -46,10 +46,10 @@ class MoodleSubmission():
         return(text)
 
     def parse_plugin_json(self, raw_json):
-        '''
+        """
         Parses a plugin block from Moodle JSON and updates the object
         accordingly.
-        '''
+        """
         files = []
         textfield = None
         for plugin in raw_json:
@@ -81,9 +81,9 @@ class MoodleSubmission():
         return self.assignment.course.get_group_members(self.groupid)
 
     def load_feedback(self):
-        '''
+        """
         Retreives the current feedback for this submission from the Moodle server.
-        '''
+        """
         params = {'assignid': self.assignment.id_,
                   'userid': self.userid}
         response = MoodleRequest(
@@ -98,20 +98,20 @@ class MoodleSubmission():
         return None
 
     def save_feedback(self, feedback):
-        '''
+        """
         Saves new feedback information on the Moodle server.
 
         See also https://moodle.org/mod/forum/discuss.php?d=384108.
-        '''
+        """
         logger.debug("Saving feedback information only.")
         self.save_grade(grade=-99999, feedback=feedback)
         return ""
 
     def save_grade(self, grade, feedback=None):
-        '''
+        """
         Saves new grading information for this student on the Moodle server, and sets the workflow
         state to "graded".
-        '''
+        """
         # You can only give text feedback if your assignment is configured accordingly
         if feedback is not None and not self.assignment.allows_feedback_comment:
             logger.error("Could not save feedback, assignment does not allow feedback comments. Please check your assignment settings in Moodle.")

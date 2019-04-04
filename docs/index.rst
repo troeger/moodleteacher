@@ -3,8 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to MoodleTeacher's documentation!
+Welcome to MoodleTeacher!
 =========================================
+
+This Python library is intended for teachers with courses in the Moodle learning management system.
+They can easily automate their grading or course management procedures, so that clicking around
+on the web page is no longer neccessary.
+
+.. toctree::
+   :maxdepth: 1
+
+   tutorial_quickstart
 
 
 Library Reference
@@ -18,6 +27,7 @@ Library Reference
    courses
    exceptions
    runnable
+   submission
    validation
 
 
