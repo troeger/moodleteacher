@@ -1,3 +1,7 @@
+"""
+Functionality to deal with Moodle courses.
+"""
+
 from collections import defaultdict
 
 from .requests import MoodleRequest
@@ -10,9 +14,9 @@ logger = logging.getLogger('moodleteacher')
 
 
 class MoodleCourse():
-    '''
-        A single Moodle course.
-    '''
+    """
+    A single Moodle course.
+    """
     assignments = []
     id_ = None
     fullname = None
@@ -24,20 +28,21 @@ class MoodleCourse():
 
     @classmethod
     def from_raw_json(cls, conn, raw_json):
-        '''
+        """
         Create a MoodleCourse object from raw JSON information.
-        '''
+        """
         return cls(conn=conn, course_id=raw_json['id'],
                    fullname=raw_json['fullname'],
                    shortname=raw_json['shortname'])
 
     @classmethod
     def from_course_id(cls, conn, course_id):
-        '''
-        Create a MoodleCourse object just from a course ID.
+        """
+        Create a :class:`MoodleCourse` object just from a course ID.
 
-        TODO: Determine missing information pieces with an API call.
-        '''
+        Todo:
+            Determine missing information pieces with an API call.
+        """
         return cls(conn=conn, course_id=course_id,
                    fullname="",
                    shortname="")
@@ -63,20 +68,24 @@ class MoodleCourse():
                     self.group_members[moodle_group.id_].add(moodle_user.id_)
 
     def get_group(self, group_id):
-        '''
-        Returns MoodleGroup object for this user id,
-        or None if not known.
-        '''
+        """
+        Determines the user group for a given group ID.
+
+        Returns:
+            :class:`MoodleGroup` object for this user id, or None if not known.
+        """
         if group_id in self.groups.keys():
             return self.groups[group_id]
         else:
             return None
 
     def get_user(self, user_id):
-        '''
-        Returns MoodleUser object for this user id,
-        or None if not known.
-        '''
+        """
+        Determine the user for a given user ID.
+
+        Returns:
+            :class:`MoodleUser` object for this user id, or None if not known.
+        """
         if user_id in self.users.keys():
             return self.users[user_id]
         else:
@@ -86,9 +95,9 @@ class MoodleCourse():
         return [self.users[user_id] for user_id in self.group_members[group_id]]
 
     def get_user_grades(self, user_id):
-        '''
-            Fetch grade table for this user, or all users, in the given course.
-        '''
+        """
+        Fetch grade table for this user, or all users, in the given course.
+        """
         params = {'courseid': self.id_, 'userid': user_id}
         response = MoodleRequest(
             self.conn, 'gradereport_user_get_grade_items').post(params).json()
@@ -103,11 +112,12 @@ class MoodleCourse():
         return result
 
     def get_folders(self):
-        '''
+        """
         Determine folders that are part of the course.
 
-        Returns list of MoodleFolder objects.
-        '''
+        Returns:
+            List of :class:`MoodleFolder` objects.
+        """
         result = []
         params = {'courseid': self.id_}
         raw_json = MoodleRequest(

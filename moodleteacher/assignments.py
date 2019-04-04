@@ -1,6 +1,6 @@
-'''
+"""
 Functionality dealing with Moodle assignments.
-'''
+"""
 
 import datetime
 
@@ -13,9 +13,9 @@ logger = logging.getLogger('moodleteacher')
 
 
 class MoodleAssignment():
-    '''
-        A Moodle assignment.
-    '''
+    """
+        A single Moodle assignment.
+    """
 
     def __init__(self, course, assignment_id, course_module_id=None, duedate=None, cutoffdate=None, deadline=None, name=None, allows_feedback_comment=None):
         self.conn = course.conn
@@ -30,9 +30,9 @@ class MoodleAssignment():
 
     @classmethod
     def from_raw_json(cls, course, raw_json):
-        '''
-        Create a MoodleAssignment object from raw JSON information.
-        '''
+        """
+        Create a :class:`MoodleAssignment` object from raw JSON information.
+        """
         duedate = datetime.datetime.fromtimestamp(raw_json['duedate'])
         cutoffdate = datetime.datetime.fromtimestamp(raw_json['cutoffdate'])
         allows_feedback_comment = False
@@ -54,9 +54,9 @@ class MoodleAssignment():
 
     @classmethod
     def from_assignment_id(cls, course, assignment_id):
-        '''
-        Create a MoodleAssignment object just from an assignment ID.
-        '''
+        """
+        Create a :class:`MoodleAssignment` object just from an assignment ID.
+        """
         # This approach is overkill, but
         # there seems to be no API call to fetch single assignment
         # detail information.
@@ -68,9 +68,9 @@ class MoodleAssignment():
 
     @classmethod
     def from_course_module_id(cls, course, course_module_id):
-        '''
-        Create a MoodleAssignment object just from a course module ID.
-        '''
+        """
+        Create a :class:`MoodleAssignment` object just from a course module ID.
+        """
         params = {}
         params['cmid'] = course_module_id
         response = MoodleRequest(
@@ -96,10 +96,10 @@ class MoodleAssignment():
         return datetime.datetime.now() > self.deadline
 
     def get_user_submission(self, user_id):
-        '''
-        Create a new MoodleSubmission object with the submission of
+        """
+        Create a new :class:`MoodleSubmission` object with the submission of
         the given user in this assignment, or None.
-        '''
+        """
         params = {}
         params['assignid'] = self.id_
         params['userid'] = user_id
@@ -130,9 +130,9 @@ class MoodleAssignment():
         return None
 
     def submissions(self):
-        '''
-        Get a list of submissions for this assignment.
-        '''
+        """
+        Get a list of :class:`MoodleSubmission` objects for this assignment.
+        """
         result = []
         # First, fetch the overview list of submissions for this assignment.
         params = {'assignmentids[0]': self.id_}
@@ -153,9 +153,9 @@ class MoodleAssignment():
 
 
 class MoodleAssignments(list):
-    '''
-        A list of MoodleAssignment instances.
-    '''
+    """
+    A list of :class:`MoodleAssignment` instances.
+    """
 
     def __init__(self, conn, course_filter=None, assignment_filter=None):
         params = {}

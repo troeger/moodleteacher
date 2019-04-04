@@ -1,29 +1,30 @@
-'''
-Functionality dealing with connecting to Moodle.
-'''
+"""
+A connection to a chosen Moodle server.
+"""
 
 import os
 import pickle
 
 
 class MoodleConnection():
-    '''
-        A connection to a Moodle installation.
-    '''
+    """
+    A connection to a Moodle installation.
+    """
     token = None
     ws_url = None
     ws_params = {}
     moodle_host = None
 
     def __init__(self, moodle_host=None, token=None, interactive=False, is_fake=False):
-        '''
-            Establishes a connection to a Moodle installation.
+        """
+        Configures a connection to a Moodle server.
 
-            Parameters:
-                moodle_host: The base URL of the Moodle installation.
-                token: The client security token for the user.
-                interactive: Prompt user for parameters, if needed.
-        '''
+        Args:
+            moodle_host:        The base URL of the Moodle installation.
+            token:              The client security token for the Moodle API access.
+            interactive (bool): Prompt interactively for parameters, if needed.
+            is_fake (bool):     Create fake connection for testing purposes.
+        """
         self.is_fake = is_fake
         if is_fake:
             return

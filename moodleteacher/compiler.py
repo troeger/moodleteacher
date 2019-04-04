@@ -1,6 +1,6 @@
-'''
+"""
 Functions dealing with the compilation of code.
-'''
+"""
 
 from .exceptions import ValidatorBrokenException
 
@@ -13,11 +13,14 @@ JAVAC = ['javac', '{inputs}']
 
 
 def compiler_cmdline(compiler=GCC, output=None, inputs=None):
-    '''
+    """
     Determine the command-line to be run for a compiler execution.
 
-    Inputs: output file name, list of input file names, compiler type
-    '''
+    Args:
+        compiler (tuple): A compiler definition. Predefined values are GCC, GPP, and JAVAC.
+        output (str): The file path for the compiler output.
+        inputs (tuple): A list of input files for the compiler.
+    """
     cmdline = []
     for element in compiler:
         if element == '{output}':

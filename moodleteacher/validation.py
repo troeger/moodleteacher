@@ -1,6 +1,6 @@
-'''
+"""
 Implementation of validation jobs.
-'''
+"""
 
 import os.path
 import os
@@ -22,18 +22,18 @@ VALIDATOR_IMPORT_NAME = 'validator'
 
 
 class Job():
-    '''
+    """
     A validation job checks a single student submission, based on a validator script written by the tutor.
 
     Check the validation section in the moodleteacher documentation for more details.
-    '''
+    """
     result_sent = False
     working_dir = None                   # The temporary working directory with all the content
     get_files_called = False
     prepared_student_files = False
 
     def __init__(self, submission, validator_file, preamble):
-        '''
+        """
         Prepares a validation job by putting all relevant files into a temporary
         directory.
 
@@ -41,7 +41,7 @@ class Job():
             submission (MoodleSubmission):            The student submission object.
             validator_file (MoodleFile):              The validator file object.
             preamble (str):                           The preamble text for each feedback message targeting students.
-        '''
+        """
         self.submission = submission
         self.validator_file = validator_file
         self.preamble = preamble
@@ -56,9 +56,9 @@ class Job():
         return self.working_dir + VALIDATOR_IMPORT_NAME + '.py'
 
     def start(self, log_level=logging.INFO):
-        '''
+        """
         Execute the validate() method in the validator script belonging to this job.
-        '''
+        """
         logger.setLevel(log_level)
 
         # Create temporary directory for validation
