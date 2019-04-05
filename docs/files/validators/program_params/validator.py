@@ -10,6 +10,7 @@ test_cases = [
 ]
 
 def validate(job):
+    job.prepare_student_files(remove_directories=True)
     job.run_compiler(compiler=GCC, inputs=['sum.c'], output='sum')
     for arguments, expected_output in test_cases:
         exit_code, output = job.run_program('./sum', arguments)

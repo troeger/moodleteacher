@@ -8,6 +8,7 @@ test_cases = [
 ]
 
 def validate(job):
+    job.prepare_student_files(remove_directories=True)
     file_names = job.grep('.*for[:space:]*(.*;.*;.*).*')
     if len(file_names) < 1:
         job.send_fail_result("You probably did not use a for-loop.", "Student is not able to use a for-loop.")

@@ -9,6 +9,7 @@ test_cases = [
 ]
 
 def validate(job):
+    job.prepare_student_files(remove_directories=True)
     job.run_build(inputs=['dec_to_bin.c'], output='dec_to_bin')
     for std_input, expected_output in test_cases:
         running = job.spawn_program('./dec_to_bin')

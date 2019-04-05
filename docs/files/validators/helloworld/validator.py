@@ -1,4 +1,5 @@
 def validate(job):
+    job.prepare_student_files(remove_directories=True)
     job.run_make(mandatory=True)
     exit_code, output = job.run_program('./hello')
     if output.strip() == "hello world":
