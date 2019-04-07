@@ -74,7 +74,7 @@ class MoodleAssignment():
         params = {}
         params['cmid'] = course_module_id
         response = MoodleRequest(
-            course.conn, 'core_course_get_course_module').get(**params).json()
+            course.conn, 'core_course_get_course_module').get(params).json()
         if response['cm']['modname'] == 'assign':
             # Determine missing information.
             # This approach is overkill, but
@@ -106,7 +106,7 @@ class MoodleAssignment():
         logger.debug("Fetching submission information for user {userid} in assignment {assignid}".format(**params))
         try:
             response = MoodleRequest(
-                self.conn, 'mod_assign_get_submission_status').get(**params).json()
+                self.conn, 'mod_assign_get_submission_status').get(params).json()
         except Exception as e:
             logger.error("Could not fetch submission information:")
             logger.exception(e)
@@ -162,7 +162,7 @@ class MoodleAssignments(list):
         if course_filter:
             params['courseids'] = course_filter
         response = MoodleRequest(
-            conn, 'mod_assign_get_assignments').get(**params).json()
+            conn, 'mod_assign_get_assignments').get(params).json()
         if 'courses' in response:
             for course_data in response['courses']:
                 course = MoodleCourse.from_raw_json(conn, course_data)

@@ -5,11 +5,11 @@ from io import BytesIO
 import os
 import os.path
 import re
-import requests
 import shutil
 from tempfile import NamedTemporaryFile
 
 from .exceptions import *
+from .requests import BaseRequest
 
 import logging
 logger = logging.getLogger('moodleteacher')
@@ -113,8 +113,7 @@ class MoodleFile():
     @classmethod
     def from_url(cls, conn, url, name=None, time_modified=None, mime_type=None):
         # fetch file from url
-        response = requests.get(url, params={
-                                'token': conn.token})
+        response = BaseRequest(conn, url).get_absolute(params={'token': conn.token})
 
         if not name:
             try:

@@ -15,7 +15,7 @@ class MoodleConnection():
     ws_params = {}
     moodle_host = None
 
-    def __init__(self, moodle_host=None, token=None, interactive=False, is_fake=False):
+    def __init__(self, moodle_host=None, token=None, interactive=False, is_fake=False, timeout=5):
         """
         Configures a connection to a Moodle server.
 
@@ -24,6 +24,7 @@ class MoodleConnection():
             token:              The client security token for the Moodle API access.
             interactive (bool): Prompt interactively for parameters, if needed.
             is_fake (bool):     Create fake connection for testing purposes.
+            timeout (int):      Timeout for HTTP requests.
         """
         self.is_fake = is_fake
         if is_fake:
@@ -46,6 +47,7 @@ class MoodleConnection():
                         pickle.dump([moodle_host, token], f)
         self.token = token
         self.moodle_host = moodle_host
+        self.timeout = timeout
         self.ws_params['wstoken'] = token
         self.ws_params['moodlewsrestformat'] = 'json'
         self.ws_url = moodle_host + "/webservice/rest/server.php"
