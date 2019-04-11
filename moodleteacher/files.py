@@ -105,8 +105,12 @@ class MoodleFile():
                     tmp.write(self.content)
                     tmp.flush()
                     self.content_type = mimetypes.guess_type(tmp.name)[0]
-                    logger.debug(
-                        "Detected {0} file content by mime guessing".format(self.content_type))
+                    if self.content_type is None:
+                        logger.warn("Unidentifiable content type, declaring it as text.")
+                        self.content_type = "application/text"
+                    else:
+                        logger.debug(
+                            "Detected {0} file content by mime guessing".format(self.content_type))
         else:
             self.content_type = content_type
 
