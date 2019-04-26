@@ -133,9 +133,9 @@ class MoodleCourse():
         return self.fullname if self.fullname else self.shortname if self.shortname else str(self.id_)
 
     def get_admin_options(self, conn):
-        params = {'courseids[0]': self.id_}
+        data = {'courseids[0]': self.id_}
         response = MoodleRequest(
-            conn, 'core_course_get_user_administration_options').post(params).json()
+            conn, 'core_course_get_user_administration_options').post(data=data).json()
         if 'courses' in response:
             for option in response['courses'][0]['options']:
                 if option['name'] == 'gradebook':

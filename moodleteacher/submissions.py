@@ -122,7 +122,7 @@ class MoodleSubmission():
         else:
             userid = self.userid
 
-        params = {'assignmentid': self.assignment.id_,
+        data = {'assignmentid': self.assignment.id_,
                   'userid': userid,
                   'workflowstate': GRADED,
                   'attemptnumber': -1,
@@ -137,5 +137,5 @@ class MoodleSubmission():
                   }
 
         response = MoodleRequest(
-            self.conn, 'mod_assign_save_grade').post(params=params).json()
+            self.conn, 'mod_assign_save_grade').post(data=data).json()
         logger.debug("Response from grading update: {0}".format(response))

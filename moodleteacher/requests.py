@@ -33,7 +33,7 @@ class BaseRequest():
         result.raise_for_status()
         return result
 
-    def post_absolute(self, params=None):
+    def post_absolute(self, params=None, data=None):
         if self.conn.is_fake:
             logger.info("Fake connection, not performing web service POST call.")
             the_response = Mock(spec=requests.models.Response)
@@ -43,7 +43,7 @@ class BaseRequest():
         logger.debug("Performing web service POST call ...")
         while (True):
             try:
-                result = requests.post(self.url, params=params, timeout=self.conn.timeout)
+                result = requests.post(self.url, params=params, data=data, timeout=self.conn.timeout)
             except requests.exceptions.Timeout:
                 logger.error("Timeout for POST request to {0} after {1} seconds, trying again.".format(self.url, self.conn.timeout))
                 continue
@@ -103,9 +103,9 @@ class MoodleRequest(BaseRequest):
                 "Error response for Moodle web service GET request ('{message}')".format(**result.json()))
         return result
 
-    def post(self, params=None):
+    def post(self, params=None, data=None):
         """
-        Perform a GET request to the Moodle web service API.
+        Perform a POST request to the Moodle web service API.
         """
         # Convert addtional parameters into correct format
         # Base parameters are already fine
@@ -113,7 +113,7 @@ class MoodleRequest(BaseRequest):
         if params:
             for k, v in params.items():
                 self._encode_param(real_params, k, v)
-        result = self.post_absolute(params=real_params)
+        result = self.post_absolute(params=real_params, data=data)
         data = result.json()
         # logger.debug("Result: {0}".format(data))          # massive data amount, also security sensitive
         logger.debug("Result: {0}".format(result))
