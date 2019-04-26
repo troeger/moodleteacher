@@ -224,7 +224,11 @@ class MoodleFile():
             f = open(target_dir + name, 'w+b')    # encode() returns a byte string to be written to the file
             if self.encoding:
                 logger.debug("Recoding text file {0} from {1} to utf-8 ...".format(name, self.encoding))
-                text = self.content.decode(self.encoding)
+                try:
+                    text = self.content.decode(self.encoding)
+                except Exception:
+                    # Fallback
+                    text = self.content.decode("ISO-8859-1", errors="ignore")
             else:
                 logger.warn("Recoding of text file {0} was requested, but the file download has no encoding information. Trying it anway ...".format(name))
                 text = self.content.decode("ISO-8859-1", errors="ignore")
