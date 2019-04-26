@@ -221,14 +221,14 @@ class MoodleFile():
             # anything, the implementation of is_binary() can be only treated as nice guess. Given that,
             # we trust in the caller to know what she does when enabling the recode feature, and just assume
             # from here that we deal with text.
-            f = open(target_dir + name, 'w+')
+            f = open(target_dir + name, 'w+b')    # encode() returns a byte string to be written to the file
             if self.encoding:
-                logger.debug("Recoding text file {0} from {1} to UTF-8 ...".format(name, self.encoding))
+                logger.debug("Recoding text file {0} from {1} to utf-8 ...".format(name, self.encoding))
                 text = self.content.decode(self.encoding)
-                f.write(text.encode("utf-8"))
             else:
                 logger.warn("Recoding of text file {0} was requested, but the file download has no encoding information. Trying it anway ...".format(name))
-                f.write(self.as_text())
+                text = self.content.decode("ISO-8859-1", errors="ignore")
+            f.write(text.encode("utf-8"))
         else:
             # plain copy
             f = open(target_dir + name, 'w+b' if self.is_binary else 'w+')
