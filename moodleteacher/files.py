@@ -213,18 +213,48 @@ class MoodleFile():
             raise JobException(info_student=info_student,
                                info_tutor=info_tutor)
 
-    def save_as(self, target_dir, name):
+    def save_as(self, target_dir, name, recode=False):
         self._check_disk_space(target_dir)
 
-        f = open(target_dir + name, 'w+b' if self.is_binary else 'w+')
-        f.write(self.content)
+        if recode:
+            # It is tempting to check for the "is_binary=False" condition here, but since the encoding could be
+            # anything, the implementation of is_binary() can be only treated as nice guess. Given that,
+            # we trust in the caller to know what she does when enabling the recode feature, and just assume
+            # from here that we deal with text.
+            f = open(target_dir + name, 'w+')
+            if self.encoding:
+                logger.debug("Recoding text file {0} from {1} to UTF-8 ...".format(name, self.encoding))
+                text = self.content.decode(self.encoding)
+                f.write(text.encode("utf-8"))
+            else:
+                logger.warn("Recoding of text file {0} was requested, but the file download has no encoding information. Trying it anway ...".format(name))
+                f.write(self.as_text())
+        else:
+            # plain copy
+            f = open(target_dir + name, 'w+b' if self.is_binary else 'w+')
+            f.write(self.content)
         f.close()
 
-    def unpack_to(self, target_dir, remove_directories):
-        '''
-        Unpack the content of the submission to the working directory.
-        If not file is not an archive, it is directly stored in target_dir
-        '''
+    def unpack_to(self, target_dir, remove_directories, recode=False):
+        """Unpack the content of the submission to the working directory.
+
+        If not file is not an archive, it is directly stored in target_dir.
+        This directory is expected to be already existent.
+
+        On low disk space, this method refuses to work in order to protect the access to
+        log files on the testing machine.
+
+        Recoding is only performed for non-archives, since archive content has no information about
+        the original text encoding of its content. For non-archive files, we assume that the encoding
+        was set during the download.
+
+        Args:
+            remove_directories (boolean): When the student submission is an archive, remove all contained
+                                          directories and unpack flat. This makes sense for all but Java code.
+                                          When the student submission is not an archive, this flag has no effect.
+            recode (boolean):             Recode the submission files to UTF-8 text, to avoid compiler problems.
+                                          When the student submission is an archive, this flag has no effect.
+        """
         assert(self.content)
         self._check_disk_space(target_dir)
 
@@ -273,7 +303,7 @@ class MoodleFile():
                 input_tar.extractall(target_dir)
         else:
             logger.debug("Assuming non-archive, copying directly.")
-            self.save_as(target_dir, self.name)
+            self.save_as(target_dir, self.name, recode)
 
         dircontent = os.listdir(target_dir)
         logger.debug("Content of %s after unarchiving: %s" %

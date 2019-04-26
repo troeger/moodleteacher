@@ -158,8 +158,15 @@ class Job():
         self.submission.save_feedback(self.preamble + info_student)
         self.result_sent = True
 
-    def prepare_student_files(self, remove_directories=True):
+    def prepare_student_files(self, remove_directories=True, recode=False):
         """Unarchive student files in temporary directory.
+
+        Args:
+            remove_directories (boolean): When the student submission is an archive, remove all contained
+                                          directories and unpack flat. This makes sense for all but Java code.
+                                          When the student submission is not an archive, this flag has no effect.
+            recode (boolean):             Recode the submission files to UTF-8 text, to avoid compiler problems.
+                                          When the student submission is an archive, this flag has no effect.
         """
         if not self.submission.files:
             logger.warn("prepare_student_files() not successful, submission has no files.")
@@ -167,7 +174,7 @@ class Job():
 
         assert(self.working_dir)
         for f in self.submission.files:
-            f.unpack_to(self.working_dir, remove_directories)
+            f.unpack_to(self.working_dir, remove_directories, recode)
         self.prepared_student_files = True
 
     def send_fail_result(self, info_student, info_tutor="Test failed."):

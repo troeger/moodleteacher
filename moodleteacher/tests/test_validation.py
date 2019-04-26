@@ -176,7 +176,11 @@ def test_1000tfm():
     _test_validation_case('1000tfm', 'packed.zip')
 
 
-def test_regressions():
-    _test_validation_case('regression_001', 'bsp.c')
+def test_regression_002():
     _test_validation_case('regression_002', 'möhre.java')
+
+def test_regression_001():
+    _test_validation_case('regression_001', 'bsp.c')
+
+def test_regression_003():
     _test_validation_case('regression_003', 'Kniffel.java')

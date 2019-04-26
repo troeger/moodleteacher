@@ -30,7 +30,7 @@ def output_test(job, wuerfel_zahlen, summe, ist_kniffel):
 
 
 def validate(job):
-    job.prepare_student_files(remove_directories=True)
+    job.prepare_student_files(remove_directories=True, recode=True)
 
     if not job.ensure_files(['Kniffel.java']):
         job.send_fail_result("Ihre Abgabe muss die Datei 'Kniffel.java' enthalten.", "FEHLER: Datei Kniffel.java fehlt.")
