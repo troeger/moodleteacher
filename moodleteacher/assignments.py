@@ -95,10 +95,12 @@ class MoodleAssignment():
     def deadline_over(self):
         return datetime.datetime.now() > self.deadline
 
-    def get_user_submission(self, user_id):
+    def get_user_submission(self, user_id, must_have_files=False):
         """
         Create a new :class:`MoodleSubmission` object with the submission of
         the given user in this assignment, or None.
+
+        When must_have_files is set to True, only submissions with files are considered.
         """
         params = {}
         params['assignid'] = self.id_
@@ -113,6 +115,17 @@ class MoodleAssignment():
             return None
         if 'lastattempt' in response:
             if 'submission' in response['lastattempt']:
+                if must_have_files:
+                    plugin_list = response['lastattempt']['submission']['plugins']
+                    for plugin_data in plugin_list:
+                        if plugin_data['type'] == 'file' and len(plugin_data['fileareas'][0]['files']) == 0:
+                            # Submission with no files
+                            # We had that effect of ghost submissions, were people never
+                            # even watched the assignment and still got submissions registered
+                            # This is the safeguard to protect from that
+                            logger.error('Submission with empty file list, ignoring it.')
+                            return None
+
                 submission = MoodleSubmission(
                     conn=self.conn,
                     submission_id=response['lastattempt']['submission']['id'],
