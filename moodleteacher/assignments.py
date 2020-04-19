@@ -142,7 +142,7 @@ class MoodleAssignment():
                 return submission
         return None
 
-    def submissions(self):
+    def submissions(self, must_have_files=False):
         """
         Get a list of :class:`MoodleSubmission` objects for this assignment.
         """
@@ -159,7 +159,7 @@ class MoodleAssignment():
                     # first API call are incomplete.
                     # We therefore query each identified
                     # submission with a separate API call.
-                    sub = self.get_user_submission(subm_data['userid'])
+                    sub = self.get_user_submission(subm_data['userid'], must_have_files)
                     if sub is not None:
                         result.append(sub)
         return result
