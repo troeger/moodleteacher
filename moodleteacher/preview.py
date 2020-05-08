@@ -6,7 +6,10 @@ Demands the install of wxPython, which is only an optional dependency for the pa
 
 import html
 import io
-
+import zipfile
+import tempfile
+import os
+from .files import MoodleFile
 try:
     import wx
     import wx.html2
@@ -180,6 +183,16 @@ class MultiFileViewer(Viewer):
 
 def show_preview(title, files):
     app = wx.App()
-    dialog = MultiFileViewer(title, files)
-    dialog.Show()
-    app.MainLoop()
+    if len(files) == 1 and files[0].is_archive:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            print("Unpacking student archive to {}".format(tmpdirname))
+            files[0].unpack_to(tmpdirname, True)
+            archive_files = [tmpdirname+'/'+entry for entry in os.listdir(tmpdirname)]
+            moodle_files = [MoodleFile.from_local_file(archive_file) for archive_file in archive_files]
+            dialog = MultiFileViewer(title, moodle_files)
+            dialog.Show()
+            app.MainLoop()
+    else:
+        dialog = MultiFileViewer(title, files)
+        dialog.Show()
+        app.MainLoop()
