@@ -81,6 +81,8 @@ if __name__ == '__main__':
         "-c", "--courseid", help="Limit to this course ID (check view.php?id=...).", default=[], action='append')
     parser.add_argument("-a", "--assignmentid",
                         help="Limit to this assignment ID (check view.php?id=...).", default=[], action='append')
+    parser.add_argument("-u", "--userid",
+                        help="Limit to this user ID.", default=[], action='append')
     args = parser.parse_args()
 
     # Retrieve list of assignments objects.
@@ -92,23 +94,31 @@ if __name__ == '__main__':
     if assignment_filter is []:
         assignment_filter = None
     assignments = MoodleAssignments(conn, course_filter=course_filter, assignment_filter=assignment_filter)
+    print("Done.")
 
     # Go through assignments, sorted by deadline (oldest first).
     assignments = sorted(assignments, key=lambda x: x.deadline)
     for assignment in assignments:
         if assignment.course.can_grade:
-            submissions = assignment.submissions()
-            gradable = [sub for sub in submissions if not sub.is_empty(
-            ) and not sub.is_graded()]
-            if args.overview:
-                print("{1} gradable submissions: '{0.name}' ({0.id_}) in '{0.course}' ({0.course.id_}), {2}".format(
-                    assignment, len(gradable), 'closed' if assignment.deadline_over() else 'open'))
+            if args.userid:
+                print("Fetching submission from user {}.".format(args.userid))
+                sub=assignment.get_user_submission(int(args.userid[0]), must_have_files=True)
+                handle_submission(sub)
             else:
-                print("Assignment '{0.name}' in '{0.course}', due to {0.deadline}:".format(
-                    assignment))
-                if not assignment.deadline_over():
-                    print("  Skipping it, still open.".format(
+                print("Fetching submissions from all users ...")
+                submissions = assignment.submissions(must_have_files=True)
+                print("Done.")
+                gradable = [sub for sub in submissions if not sub.is_empty(
+                ) and not sub.is_graded()]
+                if args.overview:
+                    print("{1} gradable submissions: '{0.name}' ({0.id_}) in '{0.course}' ({0.course.id_}), {2}".format(
+                        assignment, len(gradable), 'closed' if assignment.deadline_over() else 'open'))
+                else:
+                    print("Assignment '{0.name}' in '{0.course}', due to {0.deadline}:".format(
                         assignment))
-                    continue
-                for sub in gradable:
-                    handle_submission(sub)
+                    if not assignment.deadline_over():
+                        print("  Skipping it, still open.".format(
+                            assignment))
+                        continue
+                    for sub in gradable:
+                        handle_submission(sub)
