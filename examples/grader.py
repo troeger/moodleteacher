@@ -18,7 +18,20 @@ from moodleteacher.assignments import MoodleAssignments    # NOQA
 from moodleteacher.files import MoodleFile                 # NOQA
 
 
-def handle_submission(submission):
+def show_preview(display_name, submission):
+    # Avoid mandatory loading of wxPython when using overview only
+    from moodleteacher.preview import show_preview as mt_show_preview
+    if submission.textfield:
+        fake_file = MoodleFile.from_local_data(
+            name='(Moodle Text Box)',
+            content=submission.textfield,
+            content_type='text/html')
+        submission.files.append(fake_file)
+    if not mt_show_preview(display_name, submission.files):
+        print("Sorry, preview not possible.")
+
+
+def handle_submission(submission, old_comments):
     '''
         Handles the teacher action for a single student submission.
     '''
@@ -37,26 +50,32 @@ def handle_submission(submission):
         user = submission.assignment.course.users[submission.userid]
         print("Submission {0.id_} by {1.fullname} ({1.id_})".format(submission, user))
         display_name = user.fullname
+    print("Current feedback:")
+    existing_feedback = submission.load_feedback()
+    print(existing_feedback)
+    print("Current grade:")
+    grade = submission.assignment.course.get_user_grades(str([user,]))
+
     # Ask user what to do
     inp = 'x'
     while inp != 'g' and inp != '':
         inp = input(
             "Your options: Enter (g)rading. Show (p)review. S(k)ip this submission.\nYour choice [g]:")
         if inp == 'p':
-            # Avoid mandatory loading of wxPython when using overview only
-            from moodleteacher.preview import show_preview
-            if submission.textfield:
-                fake_file = MoodleFile.from_local_data(
-                    name='(Moodle Text Box)',
-                    content=submission.textfield,
-                    content_type='text/html')
-                submission.files.append(fake_file)
-            if not show_preview(display_name, submission.files):
-                print("Sorry, preview not possible.")
+            show_preview(display_name, submission)
         if inp == 'k':
             return
     if assignment.allows_feedback_comment:
+        for index, old_comment in enumerate(old_comments):
+            print("({}) {}".format(index, old_comment))
+        max_index = len(old_comments)
         comment = input("Feedback for student:")
+        if comment.isnumeric():
+            index = int(comment)
+            comment = old_comments[index]
+            print(comment)
+        else:
+            old_comments.append(comment)
     else:
         comment = ""
     grade = input("Grade:")
@@ -67,7 +86,9 @@ def handle_submission(submission):
 
 if __name__ == '__main__':
     import logging
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.WARN)
+
+    old_comments = []
 
     # Prepare connection to your Moodle installation.
     # The flag makes sure that the user is asked for credentials, which are then
@@ -103,7 +124,7 @@ if __name__ == '__main__':
             if args.userid:
                 print("Fetching submission from user {}.".format(args.userid))
                 sub=assignment.get_user_submission(int(args.userid[0]), must_have_files=True)
-                handle_submission(sub)
+                handle_submission(sub, old_comments)
             else:
                 print("Fetching submissions from all users ...")
                 submissions = assignment.submissions(must_have_files=True)
@@ -121,4 +142,4 @@ if __name__ == '__main__':
                             assignment))
                         continue
                     for sub in gradable:
-                        handle_submission(sub)
+                        handle_submission(sub, old_comments)
