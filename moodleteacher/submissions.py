@@ -71,7 +71,7 @@ class MoodleSubmission():
         return len(self.files) == 0 and not self.textfield
 
     def is_graded(self):
-        return self.gradingstatus == GRADED or self.load_grade()
+        return self.gradingstatus == GRADED or self.load_grade() not in [None, "-"]
 
     def is_group_submission(self):
         return self.userid == 0 and self.groupid != 0
@@ -113,6 +113,7 @@ class MoodleSubmission():
         """
         for grade in self.assignment.course.get_user_grades(self.userid):
             if grade.item_name == self.assignment.name:
+                logger.debug("Existing grade: {}".format(grade.gradeformatted))
                 return grade.gradeformatted
         return None
 
