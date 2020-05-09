@@ -35,6 +35,9 @@ def handle_submission(submission, old_comments):
     '''
         Handles the teacher action for a single student submission.
     '''
+    if submission.is_graded():
+        print("Already graded")
+        return
     print("#" * 78)
     # Submission has either textfield content or uploaed files, and was not graded so far.
     if submission.is_group_submission():
@@ -50,11 +53,8 @@ def handle_submission(submission, old_comments):
         user = submission.assignment.course.users[submission.userid]
         print("Submission {0.id_} by {1.fullname} ({1.id_})".format(submission, user))
         display_name = user.fullname
-    print("Current feedback:")
-    existing_feedback = submission.load_feedback()
-    print(existing_feedback)
-    print("Current grade:")
-    grade = submission.assignment.course.get_user_grades(str([user,]))
+        print("Current grade: {}".format(submission.load_grade()))
+    print("Current feedback: {}".format(submission.load_feedback()))
 
     # Ask user what to do
     inp = 'x'

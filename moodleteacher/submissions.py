@@ -71,7 +71,7 @@ class MoodleSubmission():
         return len(self.files) == 0 and not self.textfield
 
     def is_graded(self):
-        return self.gradingstatus == GRADED
+        return self.gradingstatus == GRADED or self.load_grade()
 
     def is_group_submission(self):
         return self.userid == 0 and self.groupid != 0
@@ -106,6 +106,15 @@ class MoodleSubmission():
         logger.debug("Saving feedback information only.")
         self.save_grade(grade=-99999, feedback=feedback)
         return ""
+
+    def load_grade(self):
+        """
+        Loads the grade currently set for this assignment.
+        """
+        for grade in self.assignment.course.get_user_grades(self.userid):
+            if grade.item_name == self.assignment.name:
+                return grade.gradeformatted
+        return None
 
     def save_grade(self, grade, feedback=None):
         """
