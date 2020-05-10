@@ -18,7 +18,7 @@ from moodleteacher.assignments import MoodleAssignments    # NOQA
 from moodleteacher.files import MoodleFile                 # NOQA
 
 
-def show_preview(display_name, submission):
+def show_preview(display_name, submission, comment):
     # Avoid mandatory loading of wxPython when using overview only
     from moodleteacher.preview import show_preview as mt_show_preview
     if submission.textfield:
@@ -27,17 +27,18 @@ def show_preview(display_name, submission):
             content=submission.textfield,
             content_type='text/html')
         submission.files.append(fake_file)
-    if not mt_show_preview(display_name, submission.files):
+    if not mt_show_preview(display_name, submission.files, comment):
         print("Sorry, preview not possible.")
 
 
-def handle_submission(submission, old_comments):
+def handle_submission(submission, prop_comments, prop_comment, prop_grade):
     '''
         Handles the teacher action for a single student submission.
     '''
     if submission.is_graded():
         print("Already graded")
         return
+
     print("#" * 78)
     # Submission has either textfield content or uploaed files, and was not graded so far.
     if submission.is_group_submission():
@@ -54,9 +55,14 @@ def handle_submission(submission, old_comments):
         print("Submission {0.id_} by {1.fullname} ({1.id_})".format(submission, user))
         display_name = user.fullname
         print("Current grade: {}".format(submission.load_grade()))
-    print("Current feedback: {}".format(submission.load_feedback()))
+    
+    current_feedback = submission.load_feedback()
+    show_preview(display_name, submission, current_feedback)
 
     # Ask user what to do
+    comment = None
+    grade = None
+
     inp = 'x'
     while inp != 'g' and inp != '':
         inp = input(
@@ -65,23 +71,33 @@ def handle_submission(submission, old_comments):
             show_preview(display_name, submission)
         if inp == 'k':
             return
+    # grading starts
     if assignment.allows_feedback_comment:
-        for index, old_comment in enumerate(old_comments):
-            print("({}) {}".format(index, old_comment))
-        max_index = len(old_comments)
-        comment = input("Feedback for student:")
+        for index, shown_comment in enumerate(prop_comments):
+            print("({}) {}".format(index, shown_comment))
+
+        if prop_comment:
+            comment = input("Feedback for student [{}]:".format(prop_comments.index(prop_comment)))
+        else:
+            comment = input("Feedback for student:")
+
         if comment.isnumeric():
             index = int(comment)
-            comment = old_comments[index]
-            print(comment)
-        else:
-            old_comments.append(comment)
+            comment = prop_comments[index]
+        elif comment == '':
+            comment = prop_comment
     else:
         comment = ""
-    grade = input("Grade:")
-    if grade != "":
-        print("Saving grade '{0}'...".format(float(grade)))
-        submission.save_grade(grade, comment)
+
+    grade = input("Grade [{}]:".format(prop_grade))
+    if grade == "":
+        grade = prop_grade
+
+    print("Saving grade '{0}' and feedback '{1}' ...".format(float(grade), comment))
+
+    submission.save_grade(grade, comment)
+
+    return comment, grade
 
 
 if __name__ == '__main__':
@@ -89,6 +105,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.WARN)
 
     old_comments = []
+    last_comment = None
+    last_grade = None
 
     # Prepare connection to your Moodle installation.
     # The flag makes sure that the user is asked for credentials, which are then
@@ -124,7 +142,9 @@ if __name__ == '__main__':
             if args.userid:
                 print("Fetching submission from user {}.".format(args.userid))
                 sub=assignment.get_user_submission(int(args.userid[0]), must_have_files=True)
-                handle_submission(sub, old_comments)
+                last_comment, last_grade = handle_submission(sub, old_comments, last_comment, last_grade)
+                if last_comment not in old_comments:
+                    old_comments.append(last_comment)
             else:
                 print("Fetching submissions from all users ...")
                 submissions = assignment.submissions(must_have_files=True)
@@ -142,4 +162,6 @@ if __name__ == '__main__':
                             assignment))
                         continue
                     for sub in gradable:
-                        handle_submission(sub, old_comments)
+                        last_comment, last_grade = handle_submission(sub, old_comments, last_comment, last_grade)
+                        if last_comment not in old_comments:
+                            old_comments.append(last_comment)

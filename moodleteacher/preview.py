@@ -117,7 +117,7 @@ class ImageTab(wx.Panel):
 
 
 class MultiFileViewer(Viewer):
-    def __init__(self, title, moodle_files):
+    def __init__(self, title, moodle_files, html_comment=None):
         super().__init__()
 
         font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
@@ -145,6 +145,13 @@ class MultiFileViewer(Viewer):
         vsizer.Add(info_sizer, 1, flag=wx.EXPAND | wx.TOP | wx.ALL, border=8)
 
         self.SetSizer(vsizer)
+
+        # Create fake Moodle file for comment display
+        # show it as first entry for first look, before the files
+        if html_comment:
+            f = MoodleFile.from_local_data('<comment>', html_comment.encode())
+            f.content_type = 'text/html'
+            entry_list.Append(f.name, clientData=f)
 
         for f in moodle_files:
             entry_list.Append(f.name, clientData=f)
@@ -181,7 +188,7 @@ class MultiFileViewer(Viewer):
         self.update(event.ClientData)
 
 
-def show_preview(title, files):
+def show_preview(title, files, html_comment=None):
     app = wx.App()
     if len(files) == 1 and files[0].is_archive:
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -189,10 +196,10 @@ def show_preview(title, files):
             files[0].unpack_to(tmpdirname, True)
             archive_files = [tmpdirname+'/'+entry for entry in os.listdir(tmpdirname)]
             moodle_files = [MoodleFile.from_local_file(archive_file) for archive_file in archive_files]
-            dialog = MultiFileViewer(title, moodle_files)
+            dialog = MultiFileViewer(title, moodle_files, html_comment)
             dialog.Show()
             app.MainLoop()
     else:
-        dialog = MultiFileViewer(title, files)
+        dialog = MultiFileViewer(title, files, html_comment)
         dialog.Show()
         app.MainLoop()
