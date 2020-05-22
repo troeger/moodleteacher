@@ -173,8 +173,12 @@ class Job():
             raise NoFilesException()
 
         assert(self.working_dir)
-        for f in self.submission.files:
-            f.unpack_to(self.working_dir, remove_directories, recode)
+        try:
+            for f in self.submission.files:
+                f.unpack_to(self.working_dir, remove_directories, recode)
+        except Exception as e:
+            logger.error("Error while unpacking student files: {}".format(e))
+            raise NoFilesException()
         self.prepared_student_files = True
 
     def send_fail_result(self, info_student, info_tutor="Test failed."):
