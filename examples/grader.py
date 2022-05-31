@@ -10,8 +10,8 @@ import sys
 import os
 # Allow execution of script from project root, based on the library
 # source code
-sys.path.append(os.path.realpath('.'))
-
+sys.path.insert(1, os.path.realpath('.'))
+print(f"Using Python path {sys.path}")
 
 from moodleteacher.connection import MoodleConnection      # NOQA
 from moodleteacher.assignments import MoodleAssignments    # NOQA
@@ -54,7 +54,6 @@ def handle_submission(submission, prop_comments, prop_comment, prop_grade):
         user = submission.assignment.course.users[submission.userid]
         print("Submission {0.id_} by {1.fullname} ({1.id_})".format(submission, user))
         display_name = user.fullname
-        print("Current grade: {}".format(submission.load_grade()))
     
     current_feedback = submission.load_feedback()
     show_preview(display_name, submission, current_feedback)
