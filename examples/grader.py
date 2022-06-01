@@ -161,6 +161,10 @@ if __name__ == '__main__':
                             assignment))
                         continue
                     for sub in gradable:
-                        last_comment, last_grade = handle_submission(sub, old_comments, last_comment, last_grade)
-                        if last_comment not in old_comments:
-                            old_comments.append(last_comment)
+                        try:
+                            last_comment, last_grade = handle_submission(sub, old_comments, last_comment, last_grade)
+                            if last_comment not in old_comments:
+                                old_comments.append(last_comment)
+                        except Exception as e:
+                            print(f"Exception while handling submission: {e}")
+                            continue
