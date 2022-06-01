@@ -137,8 +137,8 @@ class MoodleFile():
                    )
 
     @classmethod
-    def from_local_data(cls, name, content):
-        return cls(name=name, content=content)
+    def from_local_data(cls, name, content, content_type):
+        return cls(name=name, content=content, content_type=content_type)
 
     @classmethod
     def from_local_file(cls, fpath):
