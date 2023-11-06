@@ -1,4 +1,4 @@
-import collections
+import collections.abc
 import requests
 from unittest.mock import Mock
 
@@ -76,7 +76,7 @@ class MoodleRequest(BaseRequest):
         Convert Python sequences to numbered JSON list,
         and Python numbers to strings.
         """
-        if isinstance(value, collections.Sequence) and not isinstance(value, str):
+        if isinstance(value, collections.abc.Sequence) and not isinstance(value, str):
             for i, v in enumerate(value):
                 self._encode_param(params, "{}[{}]".format(key, i), v)
             return

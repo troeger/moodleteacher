@@ -15,7 +15,7 @@ class MoodleUser():
         obj.id_ = raw_json['id']
         obj.fullname = raw_json.get('fullname', '')
         obj.email = raw_json.get('email', '')
-        obj.groups = raw_json.get('email', [])
+        obj.groups = raw_json.get('groups', [])
         return obj
 
     @classmethod
