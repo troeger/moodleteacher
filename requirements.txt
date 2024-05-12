@@ -7,7 +7,7 @@ bumpversion
 wheel
 twine
 sphinx
-nose
+nose-py3
 responses
 
 # needed for preview UI
