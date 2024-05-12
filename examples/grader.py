@@ -11,7 +11,7 @@ import os
 # Allow execution of script from project root, based on the library
 # source code
 sys.path.insert(1, os.path.realpath('.'))
-print(f"Using Python path {sys.path}")
+#print(f"Using Python path {sys.path}")
 
 from moodleteacher.connection import MoodleConnection      # NOQA
 from moodleteacher.assignments import MoodleAssignments    # NOQA
