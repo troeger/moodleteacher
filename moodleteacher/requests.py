@@ -1,9 +1,19 @@
 import collections
 import requests
 from unittest.mock import Mock
-
 import logging
 logger = logging.getLogger('moodleteacher')
+
+
+def get_tokens(base_url, username, password, timeout):
+    """
+    Fetch user authentication token.
+    The result is a dictionary with "token" and "privatetoken".
+    """
+    params = {'username': username, 'password': password, 'service': 'moodle_mobile_app'}
+    url = f"{base_url}/login/token.php"
+    result = requests.get(url, params=params, timeout=timeout)
+    return result.json()
 
 
 class BaseRequest():

@@ -5,6 +5,10 @@ A connection to a chosen Moodle server.
 import os
 import pickle
 
+from getpass import getpass
+
+from moodleteacher.requests import get_tokens
+
 
 class MoodleConnection():
     """
@@ -32,7 +36,7 @@ class MoodleConnection():
         if not moodle_host and not token:
             try:
                 with open(os.path.expanduser("~/.moodleteacher"), "rb") as f:
-                    moodle_host, token = pickle.load(f)
+                    moodle_host, token, privatetoken = pickle.load(f)
             except Exception:
                 if not interactive:
                     raise AttributeError(
@@ -40,11 +44,13 @@ class MoodleConnection():
                 else:
                     print("Seems like this your first connection attempt ...")
                     moodle_host = input("URL of the Moodle host: ")
-                    token = input("Moodle web service client security token: ")
+                    moodle_username = input("User name on Moodle host: ")
+                    moodle_password = getpass("User password on Moodle host: ")
+                    tokens = get_tokens(moodle_host, moodle_username, moodle_password, timeout)
                     print(
                         "I will store these credentials in ~/.moodleteacher for the next time.")
                     with open(os.path.expanduser("~/.moodleteacher"), "xb") as f:
-                        pickle.dump([moodle_host, token], f)
+                        pickle.dump([moodle_host, tokens['token'], tokens['privatetoken']], f)
         self.token = token
         self.moodle_host = moodle_host
         self.timeout = timeout
