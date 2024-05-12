@@ -44,6 +44,32 @@ class MoodleUser():
     def __str__(self):
         return "{0.fullname} ({0.id_})".format(self)
 
+    @classmethod
+    def from_email(cls, conn, email):
+        '''
+            Fetch information about a user, based in the email.
+
+            Parameters:
+                conn: The MoodleConnection object.
+                user_id: The numerical user id.
+        '''
+        obj = cls()
+        obj.id_ = user_id
+        params = {'field': 'id', 'values[0]': str(user_id)}
+        response = MoodleRequest(
+            conn, 'core_user_get_users_by_field').post(params).json()
+        if response != []:
+            assert(response[0]['id'] == user_id)
+            obj.fullname = response[0]['fullname']
+            obj.email = response[0]['email']
+        else:
+            obj.fullname = "<Unknown>"
+            obj.email = "<Unknown>"
+        return obj
+
+    def __str__(self):
+        return "{0.fullname} ({0.id_})".format(self)
+
 
 class MoodleGroup():
     '''
